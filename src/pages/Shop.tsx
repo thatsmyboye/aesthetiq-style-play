@@ -1,25 +1,80 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTasteState } from '@/state/tasteState';
+import { useFavorites } from '@/state/favorites';
 import { seedProducts } from '@/data/seedProducts';
 import { calculateMatchScore } from '@/utils/aestheticAnalysis';
+import { generateVibeLabels } from '@/utils/vibeLabels';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingBag, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ShoppingBag, Sparkles, ExternalLink, Heart } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+
+type PriceTier = 'all' | '$' | '$$' | '$$$';
+type Category = 'all' | 'Fashion' | 'Furniture' | 'Home Decor' | 'Art';
 
 const Shop = () => {
   const { getFingerprint } = useTasteState();
+  const { favorites, addFavorite, removeFavorite, isFavorite } = useFavorites();
   const fingerprint = getFingerprint();
+  
+  const [priceTier, setPriceTier] = useState<PriceTier>('all');
+  const [category, setCategory] = useState<Category>('all');
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 24;
 
-  const rankedProducts = useMemo(() => {
-    if (!fingerprint) return seedProducts;
+  const vibeLabels = useMemo(() => {
+    if (!fingerprint) return [];
+    return generateVibeLabels(fingerprint.topTags.reduce((acc, tag) => {
+      acc[tag] = 1;
+      return acc;
+    }, {} as Record<string, number>));
+  }, [fingerprint]);
 
-    return seedProducts
+  const filteredAndRankedProducts = useMemo(() => {
+    let products = seedProducts;
+    
+    // Apply filters
+    if (priceTier !== 'all') {
+      products = products.filter((p) => {
+        if (priceTier === '$') return p.price < 100;
+        if (priceTier === '$$') return p.price >= 100 && p.price < 250;
+        if (priceTier === '$$$') return p.price >= 250;
+        return true;
+      });
+    }
+    
+    if (category !== 'all') {
+      products = products.filter((p) => p.category === category);
+    }
+
+    if (!fingerprint) return products;
+
+    // Rank by match score
+    return products
       .map((product) => ({
         ...product,
         matchScore: calculateMatchScore(product.tags, product.colors, fingerprint),
       }))
       .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
-  }, [fingerprint]);
+  }, [fingerprint, priceTier, category]);
+
+  const paginatedProducts = useMemo(() => {
+    const start = (page - 1) * itemsPerPage;
+    return filteredAndRankedProducts.slice(start, start + itemsPerPage);
+  }, [filteredAndRankedProducts, page]);
+
+  const totalPages = Math.ceil(filteredAndRankedProducts.length / itemsPerPage);
+
+  const handleFavoriteToggle = (productId: string) => {
+    if (isFavorite(productId)) {
+      removeFavorite(productId);
+      toast({ description: 'Removed from favorites' });
+    } else {
+      addFavorite(productId);
+      toast({ description: 'Added to favorites' });
+    }
+  };
 
   if (!fingerprint) {
     return (
@@ -38,24 +93,115 @@ const Shop = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl space-y-8 animate-fade-in">
-      <div className="text-center space-y-2">
-        <h2 className="text-3xl font-semibold text-foreground">Shop Your Aesthetic</h2>
-        <p className="text-muted-foreground">Curated products that match your unique style</p>
+    <div className="container mx-auto px-4 py-8 max-w-6xl space-y-6 animate-fade-in">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-4 border-b space-y-4">
+        <div className="text-center space-y-2">
+          <h2 className="text-3xl font-semibold text-foreground">Shop Your Aesthetic</h2>
+          {fingerprint && vibeLabels.length > 0 && (
+            <p className="text-muted-foreground">
+              Matched to your vibe: <span className="text-foreground font-medium">{vibeLabels.join(' • ')}</span>
+            </p>
+          )}
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-wrap gap-3 justify-center">
+          <div className="flex gap-2">
+            <Badge
+              variant={priceTier === 'all' ? 'default' : 'outline'}
+              className="cursor-pointer"
+              onClick={() => setPriceTier('all')}
+            >
+              All Prices
+            </Badge>
+            <Badge
+              variant={priceTier === '$' ? 'default' : 'outline'}
+              className="cursor-pointer"
+              onClick={() => setPriceTier('$')}
+            >
+              $ (&lt;$100)
+            </Badge>
+            <Badge
+              variant={priceTier === '$$' ? 'default' : 'outline'}
+              className="cursor-pointer"
+              onClick={() => setPriceTier('$$')}
+            >
+              $$ ($100-250)
+            </Badge>
+            <Badge
+              variant={priceTier === '$$$' ? 'default' : 'outline'}
+              className="cursor-pointer"
+              onClick={() => setPriceTier('$$$')}
+            >
+              $$$ ($250+)
+            </Badge>
+          </div>
+          
+          <div className="flex gap-2">
+            <Badge
+              variant={category === 'all' ? 'default' : 'outline'}
+              className="cursor-pointer"
+              onClick={() => setCategory('all')}
+            >
+              All
+            </Badge>
+            <Badge
+              variant={category === 'Fashion' ? 'default' : 'outline'}
+              className="cursor-pointer"
+              onClick={() => setCategory('Fashion')}
+            >
+              Fashion
+            </Badge>
+            <Badge
+              variant={category === 'Furniture' ? 'default' : 'outline'}
+              className="cursor-pointer"
+              onClick={() => setCategory('Furniture')}
+            >
+              Furniture
+            </Badge>
+            <Badge
+              variant={category === 'Home Decor' ? 'default' : 'outline'}
+              className="cursor-pointer"
+              onClick={() => setCategory('Home Decor')}
+            >
+              Home Decor
+            </Badge>
+            <Badge
+              variant={category === 'Art' ? 'default' : 'outline'}
+              className="cursor-pointer"
+              onClick={() => setCategory('Art')}
+            >
+              Art
+            </Badge>
+          </div>
+        </div>
       </div>
 
+      {/* Products Grid */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {rankedProducts.map((product) => (
+        {paginatedProducts.map((product) => (
           <Card
             key={product.id}
             className="group overflow-hidden hover:shadow-xl transition-all duration-300 border-2 hover:border-primary/20"
           >
-            <div className="aspect-square overflow-hidden bg-muted">
+            <div className="aspect-square overflow-hidden bg-muted relative">
               <img
                 src={product.imageUrl}
                 alt={product.name}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
+              <Button
+                size="icon"
+                variant="secondary"
+                className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => handleFavoriteToggle(product.id)}
+              >
+                <Heart
+                  className="w-4 h-4"
+                  fill={isFavorite(product.id) ? 'currentColor' : 'none'}
+                />
+              </Button>
             </div>
             <CardContent className="p-4 space-y-3">
               <div className="flex items-start justify-between gap-2">
@@ -70,16 +216,50 @@ const Shop = () => {
                   </Badge>
                 )}
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <p className="text-xl font-semibold text-primary">${product.price}</p>
-                <Badge variant="outline" className="text-xs">
-                  {product.category}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    {product.category}
+                  </Badge>
+                </div>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center gap-2 pt-4">
+          <Button
+            variant="outline"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+          >
+            Previous
+          </Button>
+          <div className="flex items-center gap-2">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <Button
+                key={p}
+                variant={p === page ? 'default' : 'outline'}
+                onClick={() => setPage(p)}
+                className="w-10"
+              >
+                {p}
+              </Button>
+            ))}
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+          >
+            Next
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
