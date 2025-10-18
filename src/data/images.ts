@@ -1,4 +1,12 @@
-import { VisualItem, AestheticTag } from '@/types/domain';
+import { VisualItem, AestheticTag, ColorHex } from '@/types/domain';
+
+interface AdminImage {
+  id: string;
+  url: string;
+  tags: string[];
+  colors: string[];
+  source?: string;
+}
 
 export const visualItems: VisualItem[] = [
   {
@@ -198,3 +206,31 @@ export const visualItems: VisualItem[] = [
     palette: ['#F8FCFF', '#E8F4F8', '#D8ECF0', '#E0F0F8'],
   },
 ];
+
+/**
+ * Get all visual items including admin-uploaded images from localStorage
+ */
+export function getAllVisualItems(): VisualItem[] {
+  const adminImagesJson = localStorage.getItem('adminImages');
+  
+  if (!adminImagesJson) {
+    return visualItems;
+  }
+
+  try {
+    const adminImages: AdminImage[] = JSON.parse(adminImagesJson);
+    
+    const adminVisualItems: VisualItem[] = adminImages.map((img) => ({
+      id: img.id,
+      url: img.url,
+      source: img.source,
+      tags: img.tags as AestheticTag[], // Admin should ensure valid tags
+      palette: img.colors as ColorHex[],
+    }));
+
+    return [...visualItems, ...adminVisualItems];
+  } catch (error) {
+    console.error('Failed to parse admin images:', error);
+    return visualItems;
+  }
+}

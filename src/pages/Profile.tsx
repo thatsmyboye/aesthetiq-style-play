@@ -1,5 +1,5 @@
 import { useTasteStore } from '@/state/taste';
-import { visualItems } from '@/data/images';
+import { getAllVisualItems } from '@/data/images';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,9 +8,11 @@ import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Responsi
 import { getTopTags, generateVibeLabels } from '@/utils/vibeLabels';
 import { getFrequentColors } from '@/utils/colorUtils';
 import { toast } from '@/hooks/use-toast';
+import { useMemo } from 'react';
 
 const Profile = () => {
   const { vector, reset } = useTasteStore();
+  const visualItems = useMemo(() => getAllVisualItems(), []);
 
   // Get recently chosen images (last 8 from palette history)
   const recentChosenIds = vector.palette.length > 0 

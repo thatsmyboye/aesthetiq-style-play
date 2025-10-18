@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTasteStore } from '@/state/taste';
-import { visualItems } from '@/data/images';
+import { getAllVisualItems } from '@/data/images';
 import { createPairGenerator } from '@/utils/pairs';
 import { VisualItem } from '@/types/domain';
 import SwipeChoice from '@/components/SwipeChoice';
@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 
 const Play = () => {
   const { vector, choose, reset } = useTasteStore();
+  const visualItems = useMemo(() => getAllVisualItems(), []);
   const [currentPair, setCurrentPair] = useState<[VisualItem, VisualItem] | null>(null);
   const [history, setHistory] = useState<Array<{ chosen: VisualItem; rejected: VisualItem }>>([]);
 
