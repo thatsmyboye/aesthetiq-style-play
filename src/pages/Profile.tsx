@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useTasteStore } from '@/state/taste';
 import { getAllVisualItems } from '@/data/images';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +9,7 @@ import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Responsi
 import { getTopTags, generateVibeLabels } from '@/utils/vibeLabels';
 import { getFrequentColors } from '@/utils/colorUtils';
 import { toast } from '@/hooks/use-toast';
-import { useMemo } from 'react';
+import WrappedTeaser from '@/components/WrappedTeaser';
 
 const Profile = () => {
   const { vector, reset } = useTasteStore();
@@ -79,6 +80,9 @@ const Profile = () => {
           Based on {vector.choices} choices • {Math.round(vector.confidence * 100)}% confidence
         </p>
       </div>
+
+      {/* Wrapped Teaser - Shows after 60 choices */}
+      <WrappedTeaser vector={vector} />
 
       {/* Vibe Descriptors */}
       <Card className="bg-gradient-to-br from-primary/5 to-accent/5">
