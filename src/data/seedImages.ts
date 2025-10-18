@@ -1,0 +1,68 @@
+import { AestheticImage } from '@/types';
+
+export const seedImages: AestheticImage[] = [
+  {
+    id: 'img-1',
+    url: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=800&auto=format&fit=crop',
+    tags: ['minimalist', 'modern', 'clean', 'white', 'architecture'],
+    colors: ['#FFFFFF', '#F5F5F5', '#E8E8E8'],
+    category: 'interior',
+    dominantColor: '#FFFFFF',
+  },
+  {
+    id: 'img-2',
+    url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop',
+    tags: ['fashion', 'minimal', 'neutral', 'beige', 'aesthetic'],
+    colors: ['#E8DCC8', '#C9B8A3', '#F5F0E8'],
+    category: 'fashion',
+    dominantColor: '#E8DCC8',
+  },
+  {
+    id: 'img-3',
+    url: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&auto=format&fit=crop',
+    tags: ['nature', 'green', 'botanical', 'organic', 'fresh'],
+    colors: ['#8BA888', '#6B8E6F', '#A4C2A0'],
+    category: 'nature',
+    dominantColor: '#8BA888',
+  },
+  {
+    id: 'img-4',
+    url: 'https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&auto=format&fit=crop',
+    tags: ['warm', 'cozy', 'earth', 'terracotta', 'boho'],
+    colors: ['#C17767', '#E8A598', '#D4886C'],
+    category: 'interior',
+    dominantColor: '#C17767',
+  },
+  {
+    id: 'img-5',
+    url: 'https://images.unsplash.com/photo-1487700160041-babef9c3cb55?w=800&auto=format&fit=crop',
+    tags: ['art', 'modern', 'contemporary', 'abstract', 'gallery'],
+    colors: ['#2C3E50', '#95A5A6', '#ECF0F1'],
+    category: 'art',
+    dominantColor: '#2C3E50',
+  },
+  {
+    id: 'img-6',
+    url: 'https://images.unsplash.com/photo-1595399874451-7843a0e8ea3d?w=800&auto=format&fit=crop',
+    tags: ['lifestyle', 'calm', 'serene', 'light', 'airy'],
+    colors: ['#F8F6F1', '#E8E3DB', '#D4CEC5'],
+    category: 'lifestyle',
+    dominantColor: '#F8F6F1',
+  },
+  {
+    id: 'img-7',
+    url: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&auto=format&fit=crop',
+    tags: ['fashion', 'elegant', 'chic', 'sophisticated', 'neutral'],
+    colors: ['#D5C7BC', '#B8A89A', '#9B8B7E'],
+    category: 'fashion',
+    dominantColor: '#D5C7BC',
+  },
+  {
+    id: 'img-8',
+    url: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&auto=format&fit=crop',
+    tags: ['geometric', 'bold', 'graphic', 'pattern', 'modern'],
+    colors: ['#E8C4B8', '#C89F94', '#F5E6E0'],
+    category: 'art',
+    dominantColor: '#E8C4B8',
+  },
+];
