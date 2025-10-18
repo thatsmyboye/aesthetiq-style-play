@@ -2,10 +2,12 @@ import { useState, useEffect, useMemo } from 'react';
 import { useTasteStore } from '@/state/taste';
 import { getAllVisualItems } from '@/data/images';
 import { createPairGenerator } from '@/utils/pairs';
+import { trackChoiceMilestone } from '@/utils/tracking';
 import { VisualItem } from '@/types/domain';
 import SwipeChoice from '@/components/SwipeChoice';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, SkipForward, Sparkles } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { RotateCcw, SkipForward, Sparkles, Play as PlayIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Play = () => {
@@ -48,12 +50,25 @@ const Play = () => {
     const pair = pairGenerator.getNext();
     if (pair) {
       setCurrentPair(pair);
+      
+      // Prefetch next pair images for better performance
+      const nextPair = pairGenerator.peek();
+      if (nextPair) {
+        // Preload images in background
+        [nextPair[0].url, nextPair[1].url].forEach((url) => {
+          const img = new Image();
+          img.src = url;
+        });
+      }
     }
   };
 
   const handleChoose = (chosen: VisualItem, rejected: VisualItem) => {
     // Update taste vector
     choose(chosen, rejected);
+
+    // Track milestone
+    trackChoiceMilestone(vector.choices + 1);
 
     // Add to history
     setHistory((prev) => [...prev, { chosen, rejected }]);
@@ -99,8 +114,23 @@ const Play = () => {
   if (!currentPair) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <div className="text-center space-y-4 py-12">
-          <div className="text-muted-foreground">Loading choices...</div>
+        <div className="text-center space-y-6 py-16 animate-fade-in">
+          <div className="w-20 h-20 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+            <PlayIcon className="w-10 h-10 text-primary" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-semibold text-foreground">Ready to discover your aesthetic?</h2>
+            <p className="text-muted-foreground max-w-md mx-auto text-lg">
+              Tap what feels right.
+            </p>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              We'll show you pairs of images. Choose the one that resonates with you, and we'll learn your unique style.
+            </p>
+          </div>
+          <Button size="lg" onClick={loadNextPair} className="mt-4">
+            <PlayIcon className="w-4 h-4 mr-2" />
+            Start Discovering
+          </Button>
         </div>
       </div>
     );

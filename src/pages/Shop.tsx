@@ -92,14 +92,22 @@ const Shop = () => {
   if (!fingerprint) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <div className="text-center space-y-4 py-12 animate-fade-in">
-          <div className="w-24 h-24 mx-auto rounded-full bg-secondary/30 flex items-center justify-center">
-            <ShoppingBag className="w-12 h-12 text-muted-foreground" />
+        <div className="text-center space-y-6 py-16 animate-fade-in">
+          <div className="w-20 h-20 mx-auto rounded-full bg-accent/20 flex items-center justify-center">
+            <ShoppingBag className="w-10 h-10 text-accent-foreground" />
           </div>
-          <h2 className="text-2xl font-semibold text-foreground">Discover Your Style First</h2>
-          <p className="text-muted-foreground max-w-md mx-auto">
-            Complete the swipe game to unlock personalized product recommendations
-          </p>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-semibold text-foreground">Discover Your Style First</h2>
+            <p className="text-muted-foreground max-w-md mx-auto text-lg">
+              Hand-picked to match your vibe.
+            </p>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              Complete the swipe game to unlock personalized product recommendations that align with your unique aesthetic.
+            </p>
+          </div>
+          <Button size="lg" onClick={() => window.location.href = '/play'}>
+            Start Exploring
+          </Button>
         </div>
       </div>
     );
@@ -209,8 +217,9 @@ const Shop = () => {
             <div className="aspect-square overflow-hidden bg-muted relative">
               <img
                 src={product.imageUrl}
-                alt={product.name}
+                alt={`${product.name} by ${product.brand} - ${product.tags.slice(0, 3).join(', ')} aesthetic`}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                loading="lazy"
               />
               <Button
                 size="icon"

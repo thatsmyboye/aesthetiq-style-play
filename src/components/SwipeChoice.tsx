@@ -60,6 +60,9 @@ interface ChoiceCardProps {
 }
 
 const ChoiceCard = ({ item, onClick, label }: ChoiceCardProps) => {
+  // Generate accessible alt text from tags
+  const altText = `${item.tags.slice(0, 3).join(', ')} aesthetic image`;
+  
   return (
     <button
       onClick={onClick}
@@ -67,15 +70,18 @@ const ChoiceCard = ({ item, onClick, label }: ChoiceCardProps) => {
         'group relative w-full aspect-[3/4] rounded-xl overflow-hidden',
         'shadow-lg hover:shadow-2xl transition-all duration-300',
         'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
-        'active:scale-[0.98]'
+        'active:scale-[0.98]',
+        // Ensure large tap target (min 44x44px)
+        'min-h-[44px]'
       )}
+      aria-label={`Choose ${label}: ${altText}`}
     >
       {/* Image */}
       <img
         src={item.url}
-        alt={`Choice ${label}`}
+        alt={altText}
         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-        loading="eager"
+        loading="lazy"
       />
 
       {/* Gradient Overlay */}

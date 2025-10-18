@@ -103,6 +103,23 @@ export class PairGenerator {
   }
 
   /**
+   * Peek at the next pair without consuming it
+   */
+  peek(): [VisualItem, VisualItem] | null {
+    const savedIndex = this.currentIndex;
+    const savedRecent = new Set(this.recentItems);
+
+    // Temporarily get next pair
+    const pair = this.getNext();
+
+    // Restore state
+    this.currentIndex = savedIndex;
+    this.recentItems = savedRecent;
+
+    return pair;
+  }
+
+  /**
    * Reset the generator
    */
   reset(): void {

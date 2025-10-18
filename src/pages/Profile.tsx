@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 import { Palette, Tag, Heart, Share2, RotateCcw, TrendingUp, Crown, Sparkles, Lock } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
 import { getTopTags, generateVibeLabels } from '@/utils/vibeLabels';
@@ -59,6 +60,31 @@ const Profile = () => {
           <p className="text-muted-foreground max-w-md mx-auto">
             Start swiping on images in the Play tab to discover your unique aesthetic fingerprint
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show simplified view for low confidence (< 6 choices)
+  if (vector.choices < 6) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="text-center space-y-6 py-12 animate-fade-in">
+          <div className="w-20 h-20 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+            <TrendingUp className="w-10 h-10 text-primary" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-semibold text-foreground">Your Palette is Sharpening</h2>
+            <p className="text-muted-foreground max-w-md mx-auto text-lg">
+              {vector.choices} / 6 choices made
+            </p>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              Keep exploring in the Play tab. Your aesthetic profile will become clearer with each choice.
+            </p>
+          </div>
+          <div className="max-w-xs mx-auto">
+            <Progress value={(vector.choices / 6) * 100} className="h-2" />
+          </div>
         </div>
       </div>
     );
@@ -186,8 +212,9 @@ const Profile = () => {
             >
               <img
                 src={image.url}
-                alt="Aesthetic choice"
+                alt={`${image.tags.slice(0, 3).join(', ')} aesthetic - chosen image`}
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                loading="lazy"
               />
             </div>
           ))}
