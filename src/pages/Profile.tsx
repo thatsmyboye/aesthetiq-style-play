@@ -1,10 +1,13 @@
 import { useMemo } from 'react';
 import { useTasteStore } from '@/state/taste';
+import { usePremium } from '@/state/premium';
 import { getAllVisualItems } from '@/data/images';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Palette, Tag, Heart, Share2, RotateCcw, TrendingUp } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Palette, Tag, Heart, Share2, RotateCcw, TrendingUp, Crown, Sparkles, Lock } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
 import { getTopTags, generateVibeLabels } from '@/utils/vibeLabels';
 import { getFrequentColors } from '@/utils/colorUtils';
@@ -13,6 +16,7 @@ import WrappedTeaser from '@/components/WrappedTeaser';
 
 const Profile = () => {
   const { vector, reset } = useTasteStore();
+  const { isPremium, togglePremium } = usePremium();
   const visualItems = useMemo(() => getAllVisualItems(), []);
 
   // Get recently chosen images (last 8 from palette history)
@@ -194,6 +198,70 @@ const Profile = () => {
           </p>
         )}
       </div>
+
+      {/* Premium Upsell */}
+      <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/5">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                <Crown className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">Premium Features</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Unlock deeper aesthetic insights
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="premium-toggle" className="text-sm font-medium">
+                {isPremium ? 'Enabled' : 'Try Now'}
+              </Label>
+              <Switch
+                id="premium-toggle"
+                checked={isPremium}
+                onCheckedChange={togglePremium}
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-2 p-4 rounded-lg bg-background/50">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <h4 className="font-semibold">Deep Matches (beta)</h4>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Access more product recommendations and exclusive brand collections
+              </p>
+              {!isPremium && (
+                <Badge variant="outline" className="text-xs">
+                  <Lock className="w-3 h-3 mr-1" />
+                  Premium
+                </Badge>
+              )}
+            </div>
+
+            <div className="space-y-2 p-4 rounded-lg bg-background/50">
+              <div className="flex items-center gap-2">
+                <Tag className="w-4 h-4 text-primary" />
+                <h4 className="font-semibold">Shop Reveal Insights</h4>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                See why each product matches: top tags & palette similarity scores
+              </p>
+              {!isPremium && (
+                <Badge variant="outline" className="text-xs">
+                  <Lock className="w-3 h-3 mr-1" />
+                  Premium
+                </Badge>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-4 justify-center pt-4">

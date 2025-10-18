@@ -1,13 +1,23 @@
 import { useMemo, useState } from 'react';
 import { useTasteState } from '@/state/tasteState';
 import { useFavorites } from '@/state/favorites';
+import { usePremium } from '@/state/premium';
 import { seedProducts } from '@/data/seedProducts';
 import { calculateMatchScore } from '@/utils/aestheticAnalysis';
 import { generateVibeLabels } from '@/utils/vibeLabels';
+import { calculateMatchReasons, getMatchSummary } from '@/utils/matchReasons';
+import { getAffiliateUrl } from '@/utils/affiliate';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ShoppingBag, Sparkles, ExternalLink, Heart } from 'lucide-react';
+import { 
+  ShoppingBag, 
+  Sparkles, 
+  ExternalLink, 
+  Heart,
+  TrendingUp,
+  Palette as PaletteIcon
+} from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 type PriceTier = 'all' | '$' | '$$' | '$$$';
@@ -16,6 +26,7 @@ type Category = 'all' | 'Fashion' | 'Furniture' | 'Home Decor' | 'Art';
 const Shop = () => {
   const { getFingerprint } = useTasteState();
   const { favorites, addFavorite, removeFavorite, isFavorite } = useFavorites();
+  const { isPremium } = usePremium();
   const fingerprint = getFingerprint();
   
   const [priceTier, setPriceTier] = useState<PriceTier>('all');
@@ -97,7 +108,15 @@ const Shop = () => {
       {/* Sticky Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-4 border-b space-y-4">
         <div className="text-center space-y-2">
-          <h2 className="text-3xl font-semibold text-foreground">Shop Your Aesthetic</h2>
+          <div className="flex items-center justify-center gap-2">
+            <h2 className="text-3xl font-semibold text-foreground">Shop Your Aesthetic</h2>
+            {isPremium && (
+              <Badge variant="secondary" className="text-xs">
+                <Sparkles className="w-3 h-3 mr-1" />
+                Premium Insights
+              </Badge>
+            )}
+          </div>
           {fingerprint && vibeLabels.length > 0 && (
             <p className="text-muted-foreground">
               Matched to your vibe: <span className="text-foreground font-medium">{vibeLabels.join(' • ')}</span>
@@ -216,14 +235,71 @@ const Shop = () => {
                   </Badge>
                 )}
               </div>
+
+              {/* Premium: Match Insights */}
+              {isPremium && fingerprint && (
+                <div className="bg-accent/10 rounded-lg p-3 space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-accent-foreground">
+                    <TrendingUp className="w-3 h-3" />
+                    Why it matches
+                  </div>
+                  {(() => {
+                    const reasons = calculateMatchReasons(
+                      product.tags,
+                      product.colors,
+                      fingerprint
+                    );
+                    return reasons.length > 0 ? (
+                      <div className="space-y-1.5">
+                        {reasons.map((reason, idx) => (
+                          <div key={idx} className="flex items-center gap-2 text-xs">
+                            {reason.type === 'tag' ? (
+                              <Badge variant="outline" className="text-xs px-1.5 py-0">
+                                <Sparkles className="w-2.5 h-2.5 mr-1" />
+                                {reason.score}%
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs px-1.5 py-0">
+                                <PaletteIcon className="w-2.5 h-2.5 mr-1" />
+                                {reason.score}%
+                              </Badge>
+                            )}
+                            <span className="text-muted-foreground">{reason.details}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Similar to your aesthetic</p>
+                    );
+                  })()}
+                </div>
+              )}
+
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xl font-semibold text-primary">${product.price}</p>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    {product.category}
-                  </Badge>
-                </div>
+                <Badge variant="outline" className="text-xs">
+                  {product.category}
+                </Badge>
               </div>
+
+              {/* View Product Button */}
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  // Generate affiliate URL
+                  const brandId = product.brand.toLowerCase().replace(/\s+/g, '-');
+                  const affiliateUrl = getAffiliateUrl(
+                    product.imageUrl, // Mock URL - in real app this would be product.url
+                    brandId
+                  );
+                  window.open(affiliateUrl, '_blank');
+                }}
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                View Product
+              </Button>
             </CardContent>
           </Card>
         ))}
