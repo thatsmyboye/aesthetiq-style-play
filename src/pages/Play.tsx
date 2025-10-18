@@ -1,103 +1,187 @@
-import { useState } from 'react';
-import { useTasteState } from '@/state/tasteState';
-import { seedImages } from '@/data/seedImages';
+import { useState, useEffect, useMemo } from 'react';
+import { useTasteStore } from '@/state/taste';
+import { visualItems } from '@/data/images';
+import { createPairGenerator } from '@/utils/pairs';
+import { VisualItem } from '@/types/domain';
+import SwipeChoice from '@/components/SwipeChoice';
 import { Button } from '@/components/ui/button';
-import { Heart, X, RotateCcw } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { RotateCcw, SkipForward, Sparkles } from 'lucide-react';
+import { toast } from 'sonner';
 
 const Play = () => {
-  const { preferences, currentImageIndex, addSwipe, getNextImage, reset } = useTasteState();
-  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
+  const { vector, choose, reset } = useTasteStore();
+  const [currentPair, setCurrentPair] = useState<[VisualItem, VisualItem] | null>(null);
+  const [history, setHistory] = useState<Array<{ chosen: VisualItem; rejected: VisualItem }>>([]);
 
-  const currentImage = seedImages[currentImageIndex % seedImages.length];
-  const swipeCount = preferences.swipeHistory.length;
+  // Create pair generator (memoized)
+  const pairGenerator = useMemo(() => createPairGenerator(visualItems), []);
 
-  const handleSwipe = (liked: boolean) => {
-    setSwipeDirection(liked ? 'right' : 'left');
+  // Load initial pair
+  useEffect(() => {
+    loadNextPair();
+  }, []);
 
-    setTimeout(() => {
-      addSwipe({
-        imageId: currentImage.id,
-        liked,
-        timestamp: Date.now(),
+  // Show toast at milestone
+  useEffect(() => {
+    if (vector.choices === 12) {
+      toast.success('Your aesthetic is emerging…', {
+        description: 'Keep going to refine your taste profile!',
+        duration: 4000,
       });
-      getNextImage();
-      setSwipeDirection(null);
-    }, 300);
+    }
+    if (vector.choices === 30) {
+      toast.success('Taste profile developing nicely!', {
+        description: 'Just 30 more choices to reach full confidence.',
+        duration: 4000,
+      });
+    }
+    if (vector.choices === 60) {
+      toast.success('🎉 Aesthetic mastery achieved!', {
+        description: 'Your taste profile is fully calibrated.',
+        duration: 5000,
+      });
+    }
+  }, [vector.choices]);
+
+  const loadNextPair = () => {
+    const pair = pairGenerator.getNext();
+    if (pair) {
+      setCurrentPair(pair);
+    }
   };
 
+  const handleChoose = (chosen: VisualItem, rejected: VisualItem) => {
+    // Update taste vector
+    choose(chosen, rejected);
+
+    // Add to history
+    setHistory((prev) => [...prev, { chosen, rejected }]);
+
+    // Load next pair with slight delay for smoother UX
+    setTimeout(() => {
+      loadNextPair();
+    }, 150);
+  };
+
+  const handleSkip = () => {
+    loadNextPair();
+    toast.info('Pair skipped', { duration: 2000 });
+  };
+
+  const handleUndo = () => {
+    if (history.length === 0) {
+      toast.error('Nothing to undo', { duration: 2000 });
+      return;
+    }
+
+    // Remove last entry from history
+    const newHistory = [...history];
+    newHistory.pop();
+    setHistory(newHistory);
+
+    // Note: We don't reverse the taste vector as that would be complex
+    // In a production app, you'd store reverse operations
+    toast.success('Last choice removed from history', { duration: 2000 });
+    loadNextPair();
+  };
+
+  const handleReset = () => {
+    reset();
+    setHistory([]);
+    pairGenerator.reset();
+    loadNextPair();
+    toast.success('Taste profile reset', { duration: 2000 });
+  };
+
+  const confidencePercent = Math.round(vector.confidence * 100);
+
+  if (!currentPair) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <div className="text-center space-y-4 py-12">
+          <div className="text-muted-foreground">Loading choices...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
-      <div className="space-y-6 animate-fade-in">
-        <div className="text-center space-y-2">
-          <h2 className="text-3xl font-semibold text-foreground">Discover Your Aesthetic</h2>
-          <p className="text-muted-foreground">
-            Swipe right on images you love, left on ones you don't
-          </p>
-          <p className="text-sm text-primary font-medium">{swipeCount} swipes • Keep going!</p>
+    <div className="container mx-auto px-4 py-6 max-w-6xl space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="text-center space-y-3">
+        <h2 className="text-2xl md:text-3xl font-semibold text-foreground">
+          Which aesthetic speaks to you?
+        </h2>
+        <p className="text-muted-foreground">
+          Choose your favorite to build your taste profile
+        </p>
+
+        {/* Progress */}
+        <div className="flex items-center justify-center gap-3 pt-2">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Sparkles className="w-4 h-4 text-primary" />
+            <span className="text-foreground">{vector.choices} choices</span>
+          </div>
+          <div className="w-1 h-1 rounded-full bg-muted-foreground/30" />
+          <div className="text-sm font-medium">
+            <span className="text-primary">{confidencePercent}%</span>
+            <span className="text-muted-foreground ml-1">confidence</span>
+          </div>
         </div>
 
-        {/* Swipe Card */}
-        <div className="relative aspect-[3/4] max-w-md mx-auto">
-          <div
-            className={cn(
-              'absolute inset-0 rounded-3xl overflow-hidden shadow-xl transition-all duration-300',
-              swipeDirection === 'right' && 'translate-x-12 rotate-6 opacity-0',
-              swipeDirection === 'left' && '-translate-x-12 -rotate-6 opacity-0'
-            )}
-          >
-            <img
-              src={currentImage.url}
-              alt="Aesthetic"
-              className="w-full h-full object-cover"
+        {/* Progress Bar */}
+        <div className="max-w-md mx-auto">
+          <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500 ease-out"
+              style={{ width: `${confidencePercent}%` }}
             />
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
-              <div className="flex flex-wrap gap-2">
-                {currentImage.tags.slice(0, 3).map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
+      </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center justify-center gap-6 pt-4">
-          <Button
-            size="lg"
-            variant="outline"
-            className="rounded-full w-16 h-16 p-0 border-2 hover:border-destructive hover:text-destructive"
-            onClick={() => handleSwipe(false)}
-          >
-            <X className="w-6 h-6" />
-          </Button>
-          <Button
-            size="lg"
-            className="rounded-full w-20 h-20 p-0 bg-primary hover:bg-primary/90"
-            onClick={() => handleSwipe(true)}
-          >
-            <Heart className="w-8 h-8 fill-current" />
-          </Button>
-        </div>
+      {/* Swipe Choice */}
+      <SwipeChoice
+        itemA={currentPair[0]}
+        itemB={currentPair[1]}
+        onChoose={handleChoose}
+        className="animate-scale-in"
+      />
 
-        {/* Reset Button */}
-        {swipeCount > 0 && (
-          <div className="text-center pt-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={reset}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <RotateCcw className="w-4 h-4 mr-2" />
-              Start Over
-            </Button>
-          </div>
+      {/* Actions */}
+      <div className="flex items-center justify-center gap-3 pt-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleSkip}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <SkipForward className="w-4 h-4 mr-2" />
+          Skip
+        </Button>
+
+        {history.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleUndo}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Undo
+          </Button>
+        )}
+
+        {vector.choices > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleReset}
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+          >
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Reset All
+          </Button>
         )}
       </div>
     </div>
