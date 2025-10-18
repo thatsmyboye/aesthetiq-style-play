@@ -5,7 +5,7 @@ import { usePremium } from '@/state/premium';
 import { seedProducts } from '@/data/seedProducts';
 import { calculateMatchScore } from '@/utils/aestheticAnalysis';
 import { generateVibeLabels } from '@/utils/vibeLabels';
-import { calculateMatchReasons, getMatchSummary } from '@/utils/matchReasons';
+import { generateMatchReasons } from '@/utils/scoreExplanation';
 import { getAffiliateUrl } from '@/utils/affiliate';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,15 +19,17 @@ import {
   Palette as PaletteIcon
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { TAG_LABELS } from '@/utils/vibeLabels';
 
 type PriceTier = 'all' | '$' | '$$' | '$$$';
 type Category = 'all' | 'Fashion' | 'Furniture' | 'Home Decor' | 'Art';
 
 const Shop = () => {
   const { getFingerprint } = useTasteState();
-  const { favorites, addFavorite, removeFavorite, isFavorite } = useFavorites();
+  const { favorites, addFavorite, removeFavorite, isFavorite, getRecentBrands } = useFavorites();
   const { isPremium } = usePremium();
   const fingerprint = getFingerprint();
+  const recentBrands = getRecentBrands(8);
   
   const [priceTier, setPriceTier] = useState<PriceTier>('all');
   const [category, setCategory] = useState<Category>('all');
@@ -77,12 +79,12 @@ const Shop = () => {
 
   const totalPages = Math.ceil(filteredAndRankedProducts.length / itemsPerPage);
 
-  const handleFavoriteToggle = (productId: string) => {
+  const handleFavoriteToggle = (productId: string, brand: string) => {
     if (isFavorite(productId)) {
       removeFavorite(productId);
       toast({ description: 'Removed from favorites' });
     } else {
-      addFavorite(productId);
+      addFavorite(productId, brand);
       toast({ description: 'Added to favorites' });
     }
   };
@@ -214,7 +216,7 @@ const Shop = () => {
                 size="icon"
                 variant="secondary"
                 className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={() => handleFavoriteToggle(product.id)}
+                onClick={() => handleFavoriteToggle(product.id, product.brand)}
               >
                 <Heart
                   className="w-4 h-4"
@@ -244,7 +246,7 @@ const Shop = () => {
                     Why it matches
                   </div>
                   {(() => {
-                    const reasons = calculateMatchReasons(
+                    const reasons = generateMatchReasons(
                       product.tags,
                       product.colors,
                       fingerprint
