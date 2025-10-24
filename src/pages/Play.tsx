@@ -1,13 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useTasteStore } from '@/state/taste';
+import { useTasteStore, shouldCalibrate, markCalibrationDone } from '@/state/taste';
 import { getAllVisualItems } from '@/data/images';
+import { calibrationPairs } from '@/data/calibration';
 import { createPairGenerator } from '@/utils/pairs';
 import { trackChoiceMilestone } from '@/utils/tracking';
 import { VisualItem } from '@/types/domain';
 import SwipeChoice from '@/components/SwipeChoice';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { RotateCcw, SkipForward, Sparkles, Play as PlayIcon } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { RotateCcw, SkipForward, Sparkles, Play as PlayIcon, Target } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Play = () => {
@@ -15,13 +17,17 @@ const Play = () => {
   const visualItems = useMemo(() => getAllVisualItems(), []);
   const [currentPair, setCurrentPair] = useState<[VisualItem, VisualItem] | null>(null);
   const [history, setHistory] = useState<Array<{ chosen: VisualItem; rejected: VisualItem }>>([]);
+  
+  // Calibration state
+  const [isCalibrating, setIsCalibrating] = useState(shouldCalibrate());
+  const [calibrationIndex, setCalibrationIndex] = useState(0);
 
   // Create pair generator (memoized)
   const pairGenerator = useMemo(() => createPairGenerator(visualItems), []);
 
   // Load initial pair
   useEffect(() => {
-    loadNextPair();
+    loadInitialPair();
   }, []);
 
   // Show toast at milestone
@@ -45,6 +51,21 @@ const Play = () => {
       });
     }
   }, [vector.choices]);
+
+  const loadInitialPair = () => {
+    if (isCalibrating) {
+      setCurrentPair(calibrationPairs[0]);
+      // Prefetch next calibration pair
+      if (calibrationPairs[1]) {
+        [calibrationPairs[1][0].url, calibrationPairs[1][1].url].forEach((url) => {
+          const img = new Image();
+          img.src = url;
+        });
+      }
+    } else {
+      loadNextPair();
+    }
+  };
 
   const loadNextPair = () => {
     const pair = pairGenerator.getNext();
@@ -73,13 +94,53 @@ const Play = () => {
     // Add to history
     setHistory((prev) => [...prev, { chosen, rejected }]);
 
-    // Load next pair with slight delay for smoother UX
-    setTimeout(() => {
-      loadNextPair();
-    }, 150);
+    // Handle calibration flow
+    if (isCalibrating) {
+      const nextIndex = calibrationIndex + 1;
+      
+      if (nextIndex < calibrationPairs.length) {
+        // Move to next calibration pair
+        setCalibrationIndex(nextIndex);
+        setTimeout(() => {
+          setCurrentPair(calibrationPairs[nextIndex]);
+          
+          // Prefetch next calibration pair
+          if (calibrationPairs[nextIndex + 1]) {
+            [calibrationPairs[nextIndex + 1][0].url, calibrationPairs[nextIndex + 1][1].url].forEach((url) => {
+              const img = new Image();
+              img.src = url;
+            });
+          }
+        }, 150);
+      } else {
+        // Calibration complete
+        markCalibrationDone();
+        setIsCalibrating(false);
+        setCalibrationIndex(0);
+        
+        toast.success('Calibration complete!', {
+          description: 'Your taste profile is taking shape. Keep exploring!',
+          duration: 4000,
+        });
+        
+        setTimeout(() => {
+          loadNextPair();
+        }, 150);
+      }
+    } else {
+      // Normal play mode
+      setTimeout(() => {
+        loadNextPair();
+      }, 150);
+    }
   };
 
   const handleSkip = () => {
+    // Can't skip during calibration
+    if (isCalibrating) {
+      toast.info('Please complete calibration first', { duration: 2000 });
+      return;
+    }
     loadNextPair();
     toast.info('Pair skipped', { duration: 2000 });
   };
@@ -140,11 +201,24 @@ const Play = () => {
     <div className="container mx-auto px-4 py-6 max-w-6xl space-y-6 animate-fade-in">
       {/* Header */}
       <div className="text-center space-y-3">
+        {/* Calibration Badge */}
+        {isCalibrating && (
+          <div className="flex justify-center mb-2">
+            <Badge variant="secondary" className="gap-2">
+              <Target className="w-3 h-3" />
+              Calibration {calibrationIndex + 1} of {calibrationPairs.length}
+            </Badge>
+          </div>
+        )}
+
         <h2 className="text-2xl md:text-3xl font-semibold text-foreground">
-          Which aesthetic speaks to you?
+          {isCalibrating ? 'Finding your vibe...' : 'Which aesthetic speaks to you?'}
         </h2>
         <p className="text-muted-foreground">
-          Choose your favorite to build your taste profile
+          {isCalibrating 
+            ? 'Choose your favorite from each pair to calibrate your taste profile'
+            : 'Choose your favorite to build your taste profile'
+          }
         </p>
 
         {/* Progress */}
@@ -181,17 +255,19 @@ const Play = () => {
 
       {/* Actions */}
       <div className="flex items-center justify-center gap-3 pt-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleSkip}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          <SkipForward className="w-4 h-4 mr-2" />
-          Skip
-        </Button>
+        {!isCalibrating && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSkip}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <SkipForward className="w-4 h-4 mr-2" />
+            Skip
+          </Button>
+        )}
 
-        {history.length > 0 && (
+        {!isCalibrating && history.length > 0 && (
           <Button
             variant="ghost"
             size="sm"
@@ -203,7 +279,7 @@ const Play = () => {
           </Button>
         )}
 
-        {vector.choices > 0 && (
+        {!isCalibrating && vector.choices > 0 && (
           <Button
             variant="ghost"
             size="sm"

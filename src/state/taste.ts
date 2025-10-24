@@ -265,6 +265,28 @@ export function rankProducts(
     });
 }
 
+/**
+ * Check if user should go through calibration
+ */
+export function shouldCalibrate(): boolean {
+  const done = localStorage.getItem('aesthetiq.calibration_done');
+  return !done;
+}
+
+/**
+ * Mark calibration as complete
+ */
+export function markCalibrationDone(): void {
+  localStorage.setItem('aesthetiq.calibration_done', 'true');
+}
+
+/**
+ * Reset calibration flag (useful for testing or reset)
+ */
+export function resetCalibration(): void {
+  localStorage.removeItem('aesthetiq.calibration_done');
+}
+
 // Zustand store interface
 interface TasteStore {
   vector: AestheticVector;
