@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
   TableBody,
@@ -17,6 +18,7 @@ import { Store, Upload, CheckCircle, XCircle, Info } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { parseCSV, ParsedProduct, getValidTags } from '@/utils/csv';
 import { TAG_LABELS } from '@/utils/vibeLabels';
+import { DeckBuilder } from '@/components/DeckBuilder';
 
 const Partners = () => {
   const [brandName, setBrandName] = useState('');
@@ -125,12 +127,19 @@ const Partners = () => {
             </div>
             <h2 className="text-3xl font-semibold text-foreground">Brand Partner Portal</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Upload your product catalog and reach customers who love your aesthetic
+              Upload your product catalog and create curated decks
             </p>
           </div>
 
-          {/* Upload Form */}
-          <Card>
+          <Tabs defaultValue="products" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="products">Products</TabsTrigger>
+              <TabsTrigger value="decks">Decks</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="products" className="space-y-8">
+              {/* Upload Form */}
+              <Card>
             <CardHeader>
               <CardTitle>Upload Products</CardTitle>
             </CardHeader>
@@ -275,6 +284,12 @@ const Partners = () => {
               </CardContent>
             </Card>
           )}
+            </TabsContent>
+
+            <TabsContent value="decks">
+              <DeckBuilder />
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Tag Helper Sidebar */}

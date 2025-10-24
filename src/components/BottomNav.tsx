@@ -1,12 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { Sparkles, User, ShoppingBag, Store } from 'lucide-react';
+import { Sparkles, User, ShoppingBag, Store, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { path: '/play', label: 'Play', icon: Sparkles },
+  { path: '/decks', label: 'Decks', icon: Layers },
   { path: '/profile', label: 'Profile', icon: User },
   { path: '/shop', label: 'Shop', icon: ShoppingBag },
-  { path: '/partners', label: 'Partners', icon: Store },
 ];
 
 const BottomNav = () => {

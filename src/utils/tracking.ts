@@ -63,6 +63,17 @@ export function trackFeature(featureName: string, details?: Record<string, any>)
     feature: featureName,
     ...details,
   });
+  
+  // Also push to dataLayer for GTM if available
+  try {
+    if (typeof window !== 'undefined') {
+      (window as any).dataLayer = (window as any).dataLayer || [];
+      (window as any).dataLayer.push({
+        event: featureName,
+        ...details,
+      });
+    }
+  } catch {}
 }
 
 /**
