@@ -12,8 +12,9 @@ import {
 import { Sparkles, Share2, Download, Copy, TrendingUp } from 'lucide-react';
 import { getTopTags, generateVibeLabels, TAG_LABELS } from '@/utils/vibeLabels';
 import { getFrequentColors } from '@/utils/colorUtils';
-import { renderToPNG, downloadBlob, copyBlobToClipboard } from '@/utils/share';
+import { renderToPNG, downloadBlob, copyBlobToClipboard, exportNodeToPng, copyPng, sharePng } from '@/utils/share';
 import { toast } from '@/hooks/use-toast';
+import { logEvent } from '@/state/events';
 import {
   RadarChart,
   PolarGrid,
@@ -35,6 +36,12 @@ const WrappedTeaser = ({ vector }: WrappedTeaserProps) => {
     return null;
   }
 
+  // Log wrapped_opened when modal opens
+  const handleOpenModal = () => {
+    setShowModal(true);
+    logEvent('wrapped_opened', { year: new Date().getFullYear() });
+  };
+
   const vibeLabels = generateVibeLabels(vector.tags);
   const topTags = getTopTags(vector.tags, 8);
   const top3Tags = topTags.slice(0, 3);
@@ -51,20 +58,37 @@ const WrappedTeaser = ({ vector }: WrappedTeaserProps) => {
     return Math.min(vector.confidence, progress);
   });
 
-  const handleShare = async (action: 'download' | 'copy') => {
+  const handleShare = async (action: 'download' | 'copy' | 'share') => {
     if (!wrappedRef.current) return;
 
     try {
+      if (action === 'share') {
+        const success = await sharePng(wrappedRef.current, 'aesthetiq-wrapped-2025.png');
+        if (success) {
+          logEvent('wrapped_export', { method: 'share', year: new Date().getFullYear() });
+          toast({
+            title: 'Shared!',
+            description: 'Your Wrapped has been shared',
+          });
+        } else {
+          // Fallback to download if share not supported
+          await handleShare('download');
+        }
+        return;
+      }
+
       const blob = await renderToPNG(wrappedRef.current);
 
       if (action === 'download') {
-        downloadBlob(blob, 'my-2025-wrapped.png');
+        downloadBlob(blob, 'aesthetiq-wrapped-2025.png');
+        logEvent('wrapped_export', { method: 'download', year: new Date().getFullYear() });
         toast({
           title: 'Downloaded!',
           description: 'Your Wrapped image has been saved',
         });
       } else {
         const success = await copyBlobToClipboard(blob);
+        logEvent('wrapped_export', { method: 'copy', year: new Date().getFullYear() });
         if (success) {
           toast({
             title: 'Copied!',
@@ -136,7 +160,7 @@ const WrappedTeaser = ({ vector }: WrappedTeaserProps) => {
                 ))}
               </div>
 
-              <Button onClick={() => setShowModal(true)} size="lg" className="w-full sm:w-auto">
+              <Button onClick={handleOpenModal} size="lg" className="w-full sm:w-auto">
                 <Sparkles className="w-4 h-4 mr-2" />
                 See Full Wrapped
               </Button>
@@ -156,6 +180,15 @@ const WrappedTeaser = ({ vector }: WrappedTeaserProps) => {
             {/* Share Actions */}
             <div className="flex gap-2">
               <Button
+                onClick={() => handleShare('share')}
+                variant="default"
+                size="sm"
+                className="flex-1"
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                Share
+              </Button>
+              <Button
                 onClick={() => handleShare('download')}
                 variant="outline"
                 size="sm"
@@ -171,7 +204,7 @@ const WrappedTeaser = ({ vector }: WrappedTeaserProps) => {
                 className="flex-1"
               >
                 <Copy className="w-4 h-4 mr-2" />
-                Copy Image
+                Copy
               </Button>
             </div>
 
