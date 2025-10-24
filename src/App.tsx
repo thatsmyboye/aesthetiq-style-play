@@ -11,18 +11,28 @@ import Partners from "./pages/Partners";
 import Admin from "./pages/Admin";
 import Decks from "./pages/Decks";
 import DeckPlay from "./pages/DeckPlay";
+import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { initializeDecks } from "./data/decks.seed";
 import { getOrCreateClickId } from "./state/aff";
+import { ensureConsent, loadConsent, saveConsent, type Consent } from "./state/consent";
+import ConsentBanner from "./components/ConsentBanner";
 
 const queryClient = new QueryClient();
 
 const App = () => {
+  const [consent, setConsent] = useState<Consent | null>(ensureConsent());
+  const [showCMP, setShowCMP] = useState<boolean>(!loadConsent());
+
   useEffect(() => {
     initializeDecks();
     getOrCreateClickId();
   }, []);
+
+  useEffect(() => {
+    if (consent) saveConsent(consent);
+  }, [consent]);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -40,10 +50,26 @@ const App = () => {
               <Route path="/admin" element={<Admin />} />
               <Route path="/decks" element={<Decks />} />
               <Route path="/decks/:deckId" element={<DeckPlay />} />
+              <Route path="/privacy" element={<Privacy />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>
         </BrowserRouter>
+        {showCMP && (
+          <ConsentBanner
+            initial={consent!}
+            onAcceptAll={() => {
+              const c: Consent = { v: consent!.v, givenAt: Date.now(), necessary: true, analytics: true, affiliate: true };
+              setConsent(c);
+              setShowCMP(false);
+            }}
+            onManage={() => setShowCMP(false)}
+            onSave={(c) => {
+              setConsent({ ...c, v: consent!.v, givenAt: Date.now() });
+              setShowCMP(false);
+            }}
+          />
+        )}
       </TooltipProvider>
     </QueryClientProvider>
   );

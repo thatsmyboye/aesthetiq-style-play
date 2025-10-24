@@ -7,6 +7,18 @@ type E = {
 const KEY = "aesthetiq.events.v1";
 
 export function logEvent(event: string, payload: Record<string, any> = {}) {
+  // Check consent before logging
+  let allowAnalytics = false;
+  try {
+    const consentRaw = localStorage.getItem("aesthetiq.cmp.v1");
+    if (consentRaw) {
+      const consent = JSON.parse(consentRaw);
+      allowAnalytics = consent?.analytics === true;
+    }
+  } catch {}
+
+  if (!allowAnalytics) return; // Don't log if analytics not consented
+
   const rec: E = { event, ts: Date.now(), payload };
   try {
     const raw = localStorage.getItem(KEY);

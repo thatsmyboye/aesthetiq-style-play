@@ -16,9 +16,19 @@ export function buildProductUrl({
   affParamValue?: string;
   product?: any;
 }) {
+  // Check consent for affiliate params
+  let affiliateConsent = true; // default ON
+  try {
+    const consentRaw = localStorage.getItem("aesthetiq.cmp.v1");
+    if (consentRaw) {
+      const consent = JSON.parse(consentRaw);
+      affiliateConsent = consent?.affiliate !== false;
+    }
+  } catch {}
+
   try {
     const u = new URL(baseUrl);
-    if (AFFILIATE_MODE) {
+    if (AFFILIATE_MODE && affiliateConsent) {
       // Use per-product overrides if available
       if (product?.aff_param_key && product?.aff_param_value) {
         u.searchParams.set(product.aff_param_key, product.aff_param_value);
@@ -40,9 +50,19 @@ export function buildProductUrl({
     }
     return u.toString();
   } catch {
+    // Check consent again for fallback path
+    let affiliateConsent = true;
+    try {
+      const consentRaw = localStorage.getItem("aesthetiq.cmp.v1");
+      if (consentRaw) {
+        const consent = JSON.parse(consentRaw);
+        affiliateConsent = consent?.affiliate !== false;
+      }
+    } catch {}
+
     // if baseUrl is relative or invalid, just append naïvely
     const s = new URLSearchParams();
-    if (AFFILIATE_MODE) {
+    if (AFFILIATE_MODE && affiliateConsent) {
       if (product?.aff_param_key && product?.aff_param_value) {
         s.set(product.aff_param_key, product.aff_param_value);
       } else if (affParamKey && affParamValue) {
