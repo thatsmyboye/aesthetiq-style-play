@@ -7,6 +7,8 @@ import { calculateMatchScore } from '@/utils/aestheticAnalysis';
 import { generateVibeLabels } from '@/utils/vibeLabels';
 import { generateMatchReasons } from '@/utils/scoreExplanation';
 import { getAffiliateUrl } from '@/utils/affiliate';
+import { mmr } from '@/utils/mmr';
+import { productSimilarity } from '@/utils/similarity';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -63,13 +65,39 @@ const Shop = () => {
 
     if (!fingerprint) return products;
 
-    // Rank by match score
-    return products
+    // Score products and sort by relevance
+    const scored = products
       .map((product) => ({
-        ...product,
+        product,
         matchScore: calculateMatchScore(product.tags, product.colors, fingerprint),
       }))
       .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
+
+    // Apply MMR to diversify top results
+    const N = Math.min(50, scored.length);     // re-rank top 50
+    const K = Math.min(16, N);                 // ensure first 16 are diversified
+    const LAMBDA = 0.75;                       // relevance-weight
+
+    const diversified = mmr({
+      candidates: scored.slice(0, N),
+      k: K,
+      lambda: LAMBDA,
+      relevance: (x) => x.matchScore || 0,
+      similarity: (a, b) => productSimilarity(a.product, b.product),
+    });
+
+    // Combine: diversified products + remaining tail
+    const diversifiedProducts = diversified.map((x) => ({
+      ...x.product,
+      matchScore: x.matchScore,
+    }));
+    
+    const remainingProducts = scored.slice(N).map((x) => ({
+      ...x.product,
+      matchScore: x.matchScore,
+    }));
+
+    return [...diversifiedProducts, ...remainingProducts];
   }, [fingerprint, priceTier, category]);
 
   const paginatedProducts = useMemo(() => {
