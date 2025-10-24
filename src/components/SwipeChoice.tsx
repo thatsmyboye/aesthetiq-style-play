@@ -1,5 +1,6 @@
 import { VisualItem } from '@/types/domain';
 import { cn } from '@/lib/utils';
+import LazyImage from '@/components/LazyImage';
 
 interface SwipeChoiceProps {
   itemA: VisualItem;
@@ -77,12 +78,17 @@ const ChoiceCard = ({ item, onClick, label }: ChoiceCardProps) => {
       aria-label={`Choose ${label}: ${altText}`}
     >
       {/* Image */}
-      <img
-        src={item.url}
-        alt={altText}
-        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-        loading="lazy"
-      />
+      <div className="absolute inset-0">
+        <LazyImage
+          src={item.url}
+          alt={altText}
+          aspect="portrait"
+          widths={[360, 480, 720, 1024]}
+          sizes="(min-width: 1024px) 420px, 46vw"
+          eager
+          className="transition-transform duration-500 group-hover:scale-105"
+        />
+      </div>
 
       {/* Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-60 group-hover:opacity-70 transition-opacity" />

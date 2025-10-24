@@ -8,6 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Heart, ExternalLink, Sparkles } from "lucide-react";
 import { buildProductUrl } from "@/utils/outbound";
 import { logEvent } from "@/state/events";
+import LazyImage from "@/components/LazyImage";
+import { preloadImages } from "@/utils/preload";
+import { imgUrl } from "@/utils/img";
 
 interface ProductCardProps {
   product: {
@@ -62,13 +65,18 @@ export function ProductCard({
   };
 
   return (
-    <Card className="group overflow-hidden hover:shadow-xl transition-all duration-300 border-2 hover:border-primary/20">
+    <Card 
+      className="group overflow-hidden hover:shadow-xl transition-all duration-300 border-2 hover:border-primary/20"
+      onMouseEnter={() => preloadImages([imgUrl(product.imageUrl, 480)])}
+    >
       <div className="aspect-square overflow-hidden bg-muted relative">
-        <img
+        <LazyImage
           src={product.imageUrl}
           alt={`${product.name} by ${product.brand} - ${product.tags.slice(0, 3).join(', ')} aesthetic`}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          loading="lazy"
+          aspect="square"
+          widths={[240, 320, 480, 640]}
+          sizes="(min-width: 1024px) 240px, 48vw"
+          className="group-hover:scale-105 transition-transform duration-500"
         />
         <Button
           size="icon"

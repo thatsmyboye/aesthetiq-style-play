@@ -12,6 +12,8 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { RotateCcw, SkipForward, Sparkles, Play as PlayIcon, Target } from 'lucide-react';
 import { toast } from 'sonner';
+import { preloadImages } from '@/utils/preload';
+import { imgUrl } from '@/utils/img';
 
 const Play = () => {
   const { vector, choose, reset } = useTasteStore();
@@ -59,10 +61,10 @@ const Play = () => {
       setCurrentPair(calibrationPairs[0]);
       // Prefetch next calibration pair
       if (calibrationPairs[1]) {
-        [calibrationPairs[1][0].url, calibrationPairs[1][1].url].forEach((url) => {
-          const img = new Image();
-          img.src = url;
-        });
+        preloadImages([
+          imgUrl(calibrationPairs[1][0].url, 480),
+          imgUrl(calibrationPairs[1][1].url, 480)
+        ]);
       }
     } else {
       loadNextPair();
@@ -77,13 +79,10 @@ const Play = () => {
     // Track recent items to avoid repeats
     setRecent((r) => [pair[0].id, pair[1].id, ...r].slice(0, 20));
     
-    // Prefetch next potential pair (explore mode approximation)
+    // Prefetch next potential pair at optimal width
     setTimeout(() => {
       const nextPair = getNextPairSmart(visualItems, vector, obs, recent);
-      [nextPair[0].url, nextPair[1].url].forEach((url) => {
-        const img = new Image();
-        img.src = url;
-      });
+      preloadImages([imgUrl(nextPair[0].url, 480), imgUrl(nextPair[1].url, 480)]);
     }, 100);
   };
 
@@ -112,10 +111,10 @@ const Play = () => {
           
           // Prefetch next calibration pair
           if (calibrationPairs[nextIndex + 1]) {
-            [calibrationPairs[nextIndex + 1][0].url, calibrationPairs[nextIndex + 1][1].url].forEach((url) => {
-              const img = new Image();
-              img.src = url;
-            });
+            preloadImages([
+              imgUrl(calibrationPairs[nextIndex + 1][0].url, 480),
+              imgUrl(calibrationPairs[nextIndex + 1][1].url, 480)
+            ]);
           }
         }, 150);
       } else {
