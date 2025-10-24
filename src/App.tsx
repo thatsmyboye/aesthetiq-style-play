@@ -12,6 +12,7 @@ import Admin from "./pages/Admin";
 import Decks from "./pages/Decks";
 import DeckPlay from "./pages/DeckPlay";
 import Privacy from "./pages/Privacy";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import { useEffect, useState } from "react";
 import { initializeDecks } from "./data/decks.seed";
@@ -51,6 +52,7 @@ const App = () => {
               <Route path="/decks" element={<Decks />} />
               <Route path="/decks/:deckId" element={<DeckPlay />} />
               <Route path="/privacy" element={<Privacy />} />
+              <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>

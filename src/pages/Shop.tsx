@@ -14,6 +14,10 @@ import { Button } from '@/components/ui/button';
 import { ShoppingBag, Sparkles, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { ProductCard } from '@/components/ProductCard';
+import { getMeter, bumpMeter } from '@/state/premium';
+import { FREE_METERS } from '@/config/premium';
+import { usePremium as usePremiumHook } from '@/hooks/usePremium';
+import Paywall from '@/components/Paywall';
 
 type PriceTier = 'all' | '$' | '$$' | '$$$';
 type Category = 'all' | 'Fashion' | 'Furniture' | 'Home Decor' | 'Art';
@@ -22,6 +26,7 @@ const Shop = () => {
   const { getFingerprint } = useTasteState();
   const { favorites, addFavorite, removeFavorite, isFavorite, getRecentBrands } = useFavorites();
   const { isPremium } = usePremium();
+  const { premium } = usePremiumHook();
   const fingerprint = getFingerprint();
   const recentBrands = getRecentBrands(8);
   
@@ -29,6 +34,8 @@ const Shop = () => {
   const [category, setCategory] = useState<Category>('all');
   const [page, setPage] = useState(1);
   const [showDisclosure, setShowDisclosure] = useState(true);
+  const [deepMatches, setDeepMatches] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
   const [searchParams] = useSearchParams();
   const itemsPerPage = 24;
 
@@ -93,10 +100,10 @@ const Shop = () => {
       }))
       .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
 
-    // Apply MMR to diversify top results
+    // Apply MMR to diversify top results (premium gets higher K and lambda)
     const N = Math.min(50, scored.length);     // re-rank top 50
-    const K = Math.min(16, N);                 // ensure first 16 are diversified
-    const LAMBDA = 0.75;                       // relevance-weight
+    const K = premium ? Math.min(20, N) : Math.min(16, N);  // premium: more diverse
+    const LAMBDA = premium ? 0.78 : 0.75;      // premium: slightly more relevance
 
     const diversified = mmr({
       candidates: scored.slice(0, N),
@@ -118,7 +125,7 @@ const Shop = () => {
     }));
 
     return [...diversifiedProducts, ...remainingProducts];
-  }, [fingerprint, priceTier, category]);
+  }, [fingerprint, priceTier, category, premium]);
 
   const paginatedProducts = useMemo(() => {
     const start = (page - 1) * itemsPerPage;
@@ -136,6 +143,27 @@ const Shop = () => {
       addFavorite(productId, brand);
       toast({ description: 'Added to favorites' });
       logEvent("favorite_added", { product_id: productId, deck_id: deckId });
+    }
+  };
+
+  const handleDeepMatchesToggle = () => {
+    if (premium) {
+      setDeepMatches(!deepMatches);
+      return;
+    }
+    if (deepMatches) {
+      setDeepMatches(false);
+      return;
+    }
+    const used = getMeter("deepMatchesViews");
+    if (used < FREE_METERS.deepMatchesViews) {
+      bumpMeter("deepMatchesViews");
+      setDeepMatches(true);
+      toast({ description: `Deep Matches enabled (${FREE_METERS.deepMatchesViews - used - 1} free uses left)` });
+    } else {
+      logEvent("meter_exhausted", { feature: "deep", used });
+      logEvent("paywall_shown", { feature: "deep" });
+      setShowPaywall(true);
     }
   };
 
@@ -222,6 +250,20 @@ const Shop = () => {
             </p>
           )}
         </div>
+
+        {/* Deep Matches Toggle (premium feature) */}
+        {premium && (
+          <div className="flex justify-center">
+            <Button
+              variant={deepMatches ? "default" : "outline"}
+              size="sm"
+              onClick={handleDeepMatchesToggle}
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Deep Matches {deepMatches ? "ON" : "OFF"}
+            </Button>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="flex flex-wrap gap-3 justify-center">
@@ -358,6 +400,8 @@ const Shop = () => {
           </Button>
         </div>
       )}
+
+      <Paywall open={showPaywall} onClose={() => setShowPaywall(false)} feature="deep" />
     </div>
   );
 };

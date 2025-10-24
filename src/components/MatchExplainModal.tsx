@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import type { AestheticVector, AestheticTag } from "@/types/domain";
 import { explainScore } from "@/state/taste";
 import { PREMIUM_MODE } from "@/config/app";
@@ -6,6 +6,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles } from "lucide-react";
+import { getMeter, bumpMeter } from "@/state/premium";
+import { FREE_METERS } from "@/config/premium";
+import { usePremium } from "@/hooks/usePremium";
+import Paywall from "@/components/Paywall";
+import { logEvent } from "@/state/events";
 
 const friendly = (t: string) => t.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
@@ -29,6 +34,10 @@ export function MatchExplainModal({
   vector: AestheticVector;
   recentBrands?: string[];
 }) {
+  const { premium } = usePremium();
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [canViewFull, setCanViewFull] = useState(false);
+
   const e = explainScore(
     {
       id: "",
@@ -45,14 +54,37 @@ export function MatchExplainModal({
     recentBrands
   );
 
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Why this matches your vibe</DialogTitle>
-        </DialogHeader>
+  // Check meter when modal opens
+  React.useEffect(() => {
+    if (!open) return;
+    if (premium) {
+      setCanViewFull(true);
+      return;
+    }
+    const used = getMeter("whyOpens");
+    if (used < FREE_METERS.whyOpens) {
+      bumpMeter("whyOpens");
+      setCanViewFull(true);
+    } else {
+      setCanViewFull(false);
+      logEvent("meter_exhausted", { feature: "why", used });
+    }
+  }, [open, premium]);
 
-        {PREMIUM_MODE ? (
+  const handleUpgradeClick = () => {
+    setShowPaywall(true);
+    logEvent("paywall_shown", { feature: "why" });
+  };
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Why this matches your vibe</DialogTitle>
+          </DialogHeader>
+
+          {canViewFull ? (
           <div className="space-y-4">
             <div>
               <div className="text-sm text-muted-foreground">Overall match score</div>
@@ -126,16 +158,16 @@ export function MatchExplainModal({
               <Button
                 className="w-full"
                 size="lg"
-                onClick={() => {
-                  /* open paywall or settings */
-                }}
+                onClick={handleUpgradeClick}
               >
                 Upgrade to Premium
               </Button>
             </div>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+      <Paywall open={showPaywall} onClose={() => setShowPaywall(false)} feature="why" />
+    </>
   );
 }

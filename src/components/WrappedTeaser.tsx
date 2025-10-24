@@ -3,6 +3,10 @@ import { AestheticVector, AestheticTag } from '@/types/domain';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { getMeter, bumpMeter } from '@/state/premium';
+import { FREE_METERS } from '@/config/premium';
+import { usePremium } from '@/hooks/usePremium';
+import Paywall from '@/components/Paywall';
 import {
   Dialog,
   DialogContent,
@@ -30,7 +34,9 @@ interface WrappedTeaserProps {
 
 const WrappedTeaser = ({ vector }: WrappedTeaserProps) => {
   const [showModal, setShowModal] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
   const wrappedRef = useRef<HTMLDivElement>(null);
+  const { premium } = usePremium();
 
   if (vector.choices < 60) {
     return null;
@@ -60,6 +66,18 @@ const WrappedTeaser = ({ vector }: WrappedTeaserProps) => {
 
   const handleShare = async (action: 'download' | 'copy' | 'share') => {
     if (!wrappedRef.current) return;
+
+    // Check meter for exports
+    if (!premium && action !== 'share') {
+      const used = getMeter("wrappedExports");
+      if (used >= FREE_METERS.wrappedExports) {
+        logEvent("meter_exhausted", { feature: "wrapped", used });
+        logEvent("paywall_shown", { feature: "wrapped" });
+        setShowPaywall(true);
+        return;
+      }
+      bumpMeter("wrappedExports");
+    }
 
     try {
       if (action === 'share') {
@@ -293,6 +311,8 @@ const WrappedTeaser = ({ vector }: WrappedTeaserProps) => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Paywall open={showPaywall} onClose={() => setShowPaywall(false)} feature="wrapped" />
     </>
   );
 };
