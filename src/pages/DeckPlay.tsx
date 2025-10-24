@@ -4,7 +4,7 @@ import { getAllVisualItems } from "@/data/images";
 import { products } from "@/data/products";
 import { useEffect, useMemo, useState } from "react";
 import { useTasteStore } from "@/state/taste";
-import { trackFeature } from "@/utils/tracking";
+import { logEvent } from "@/state/events";
 import { bumpObs } from "@/state/observations";
 import { loadObs } from "@/state/observations";
 import type { VisualItem, Product, AestheticTag } from "@/types/domain";
@@ -42,12 +42,16 @@ const DeckPlay = () => {
 
   useEffect(() => {
     if (deck) {
-      trackFeature("deck_opened", { deckId: deck.id, creatorId: deck.creatorId });
-      sessionStorage.setItem("currentDeckId", deck.id);
+      logEvent("deck_opened", { deckId: deck.id, creatorId: deck.creatorId });
+      try {
+        sessionStorage.setItem("deck_ctx", deck.id);
+      } catch {}
     }
     
     return () => {
-      sessionStorage.removeItem("currentDeckId");
+      try {
+        sessionStorage.removeItem("deck_ctx");
+      } catch {}
     };
   }, [deck]);
 
@@ -78,7 +82,7 @@ const DeckPlay = () => {
     setObs(nextObs);
 
     // Track choice
-    trackFeature("deck_choice", {
+    logEvent("deck_choice", {
       deckId: deck?.id,
       chosen: chosen.id,
       rejected: rejected.id,
@@ -90,7 +94,7 @@ const DeckPlay = () => {
 
   const handleExitToShop = () => {
     if (deck) {
-      trackFeature("deck_exit_to_shop", { deckId: deck.id });
+      logEvent("deck_exit_to_shop", { deckId: deck.id });
       const params = new URLSearchParams({
         fromDeck: deck.id,
         brands: deck.creatorId,

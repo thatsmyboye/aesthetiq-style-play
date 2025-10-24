@@ -1,16 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTasteState } from '@/state/tasteState';
 import { useFavorites } from '@/state/favorites';
 import { usePremium } from '@/state/premium';
 import { seedProducts } from '@/data/seedProducts';
 import { calculateMatchScore } from '@/utils/aestheticAnalysis';
 import { generateVibeLabels } from '@/utils/vibeLabels';
-import { getAffiliateUrl } from '@/utils/affiliate';
 import { mmr } from '@/utils/mmr';
 import { productSimilarity } from '@/utils/similarity';
+import { logEvent } from '@/state/events';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ShoppingBag, Sparkles } from 'lucide-react';
+import { ShoppingBag, Sparkles, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { ProductCard } from '@/components/ProductCard';
 
@@ -27,7 +28,35 @@ const Shop = () => {
   const [priceTier, setPriceTier] = useState<PriceTier>('all');
   const [category, setCategory] = useState<Category>('all');
   const [page, setPage] = useState(1);
+  const [showDisclosure, setShowDisclosure] = useState(true);
+  const [searchParams] = useSearchParams();
   const itemsPerPage = 24;
+
+  // Get deck context from URL or session
+  const deckId = useMemo(() => {
+    const fromUrl = searchParams.get("fromDeck");
+    if (fromUrl) return fromUrl;
+    try {
+      return sessionStorage.getItem("deck_ctx");
+    } catch {
+      return null;
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    // Check if user has dismissed disclosure before
+    try {
+      const dismissed = localStorage.getItem("aff_disclosure_dismissed");
+      if (dismissed) setShowDisclosure(false);
+    } catch {}
+  }, []);
+
+  const dismissDisclosure = () => {
+    setShowDisclosure(false);
+    try {
+      localStorage.setItem("aff_disclosure_dismissed", "true");
+    } catch {}
+  };
 
   const vibeLabels = useMemo(() => {
     if (!fingerprint) return [];
@@ -102,9 +131,11 @@ const Shop = () => {
     if (isFavorite(productId)) {
       removeFavorite(productId);
       toast({ description: 'Removed from favorites' });
+      logEvent("favorite_removed", { product_id: productId, deck_id: deckId });
     } else {
       addFavorite(productId, brand);
       toast({ description: 'Added to favorites' });
+      logEvent("favorite_added", { product_id: productId, deck_id: deckId });
     }
   };
 
@@ -134,6 +165,34 @@ const Shop = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl space-y-6 animate-fade-in">
+      {/* Affiliate Disclosure */}
+      {showDisclosure && (
+        <div className="bg-muted/50 border rounded-lg p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 text-sm">
+              <p className="text-foreground/80">
+                AesthetIQ may earn a commission from recommended products. We attach a click ID to measure which aesthetics convert. No personal info is shared.
+              </p>
+              <Button 
+                variant="link" 
+                className="h-auto p-0 text-sm" 
+                onClick={() => window.open('/privacy', '_blank')}
+              >
+                Learn more
+              </Button>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0"
+              onClick={dismissDisclosure}
+            >
+              <X className="h-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Sticky Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-4 border-b space-y-4">
         <div className="text-center space-y-2">
@@ -146,11 +205,17 @@ const Shop = () => {
               </Badge>
             )}
           </div>
-          {fingerprint && vibeLabels.length > 0 && (
+          <div className="space-y-1">
             <p className="text-muted-foreground">
               Matched to your vibe — click "Why?" for details
             </p>
-          )}
+            {deckId && (
+              <Badge variant="secondary" className="text-xs">
+                <Sparkles className="w-3 h-3 mr-1" />
+                From deck: {deckId}
+              </Badge>
+            )}
+          </div>
           {fingerprint && vibeLabels.length > 0 && (
             <p className="text-sm text-muted-foreground">
               <span className="text-foreground font-medium">{vibeLabels.join(' • ')}</span>
@@ -254,12 +319,9 @@ const Shop = () => {
               vector={vector}
               isFavorite={isFavorite(product.id)}
               onFavoriteToggle={() => handleFavoriteToggle(product.id, product.brand)}
-              onViewProduct={() => {
-                const brandId = product.brand.toLowerCase().replace(/\s+/g, '-');
-                const affiliateUrl = getAffiliateUrl(product.imageUrl, brandId);
-                window.open(affiliateUrl, '_blank');
-              }}
+              onViewProduct={() => {}}
               recentBrands={recentBrands}
+              deckId={deckId}
             />
           );
         })}

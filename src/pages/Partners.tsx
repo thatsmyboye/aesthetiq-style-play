@@ -183,9 +183,18 @@ const Partners = () => {
                     Parse
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  CSV must include columns: title, image, price, url, brand, tags, palette
+                <p className="text-sm text-muted-foreground mb-4">
+                  Bulk import products from CSV. Required columns: id, name, brand, price, imageUrl, url, category, tags (comma-separated), colors (comma-separated).
                 </p>
+                <div className="rounded-lg bg-muted p-4 text-sm space-y-2">
+                  <p className="font-medium">Affiliate Linking</p>
+                  <p className="text-muted-foreground">
+                    We'll append <code className="bg-background px-1 rounded">?src=aesthetiq&click_id=[id]&deck=[deckId]&utm_source=aesthetiq&utm_medium=referral&utm_campaign=shop_v1</code> and <code className="bg-background px-1 rounded">?aff=[brand]</code> by default.
+                  </p>
+                  <p className="text-muted-foreground">
+                    If your shop needs custom params, include <code className="bg-background px-1 rounded">aff_param_key</code> and <code className="bg-background px-1 rounded">aff_param_value</code> per product in CSV.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>

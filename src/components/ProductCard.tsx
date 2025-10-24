@@ -6,6 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Heart, ExternalLink, Sparkles } from "lucide-react";
+import { buildProductUrl } from "@/utils/outbound";
+import { logEvent } from "@/state/events";
 
 interface ProductCardProps {
   product: {
@@ -18,12 +20,14 @@ interface ProductCardProps {
     colors: string[];
     category: string;
     matchScore?: number;
+    url?: string;
   };
   vector: AestheticVector;
   isFavorite: boolean;
   onFavoriteToggle: () => void;
   onViewProduct: () => void;
   recentBrands?: string[];
+  deckId?: string | null;
 }
 
 export function ProductCard({
@@ -33,8 +37,28 @@ export function ProductCard({
   onFavoriteToggle,
   onViewProduct,
   recentBrands = [],
+  deckId = null,
 }: ProductCardProps) {
   const [modalOpen, setModalOpen] = useState(false);
+
+  const productUrl = product.url 
+    ? buildProductUrl({ 
+        baseUrl: product.url, 
+        brandId: product.brand, 
+        deckId 
+      })
+    : "#";
+
+  const handleProductClick = () => {
+    logEvent("product_clicked", {
+      product_id: product.id,
+      brand: product.brand,
+      deck_id: deckId,
+      price: product.price,
+      category: product.category
+    });
+    onViewProduct();
+  };
 
   return (
     <Card className="group overflow-hidden hover:shadow-xl transition-all duration-300 border-2 hover:border-primary/20">
@@ -83,9 +107,17 @@ export function ProductCard({
           </Badge>
         </div>
 
-        <Button size="sm" variant="outline" className="w-full" onClick={onViewProduct}>
-          <ExternalLink className="w-4 h-4 mr-2" />
-          View Product
+        <Button 
+          size="sm" 
+          variant="outline" 
+          className="w-full" 
+          onClick={handleProductClick}
+          asChild
+        >
+          <a href={productUrl} target="_blank" rel="noopener noreferrer">
+            <ExternalLink className="w-4 h-4 mr-2" />
+            View Product
+          </a>
         </Button>
       </CardContent>
 

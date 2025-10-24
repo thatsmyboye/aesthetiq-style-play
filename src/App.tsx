@@ -14,12 +14,14 @@ import DeckPlay from "./pages/DeckPlay";
 import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
 import { initializeDecks } from "./data/decks.seed";
+import { getOrCreateClickId } from "./state/aff";
 
 const queryClient = new QueryClient();
 
 const App = () => {
   useEffect(() => {
     initializeDecks();
+    getOrCreateClickId();
   }, []);
 
   return (
