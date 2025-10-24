@@ -5,23 +5,14 @@ import { usePremium } from '@/state/premium';
 import { seedProducts } from '@/data/seedProducts';
 import { calculateMatchScore } from '@/utils/aestheticAnalysis';
 import { generateVibeLabels } from '@/utils/vibeLabels';
-import { generateMatchReasons } from '@/utils/scoreExplanation';
 import { getAffiliateUrl } from '@/utils/affiliate';
 import { mmr } from '@/utils/mmr';
 import { productSimilarity } from '@/utils/similarity';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { 
-  ShoppingBag, 
-  Sparkles, 
-  ExternalLink, 
-  Heart,
-  TrendingUp,
-  Palette as PaletteIcon
-} from 'lucide-react';
+import { ShoppingBag, Sparkles } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { TAG_LABELS } from '@/utils/vibeLabels';
+import { ProductCard } from '@/components/ProductCard';
 
 type PriceTier = 'all' | '$' | '$$' | '$$$';
 type Category = 'all' | 'Fashion' | 'Furniture' | 'Home Decor' | 'Art';
@@ -157,7 +148,12 @@ const Shop = () => {
           </div>
           {fingerprint && vibeLabels.length > 0 && (
             <p className="text-muted-foreground">
-              Matched to your vibe: <span className="text-foreground font-medium">{vibeLabels.join(' • ')}</span>
+              Matched to your vibe — click "Why?" for details
+            </p>
+          )}
+          {fingerprint && vibeLabels.length > 0 && (
+            <p className="text-sm text-muted-foreground">
+              <span className="text-foreground font-medium">{vibeLabels.join(' • ')}</span>
             </p>
           )}
         </div>
@@ -237,111 +233,36 @@ const Shop = () => {
 
       {/* Products Grid */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {paginatedProducts.map((product) => (
-          <Card
-            key={product.id}
-            className="group overflow-hidden hover:shadow-xl transition-all duration-300 border-2 hover:border-primary/20"
-          >
-            <div className="aspect-square overflow-hidden bg-muted relative">
-              <img
-                src={product.imageUrl}
-                alt={`${product.name} by ${product.brand} - ${product.tags.slice(0, 3).join(', ')} aesthetic`}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                loading="lazy"
-              />
-              <Button
-                size="icon"
-                variant="secondary"
-                className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={() => handleFavoriteToggle(product.id, product.brand)}
-              >
-                <Heart
-                  className="w-4 h-4"
-                  fill={isFavorite(product.id) ? 'currentColor' : 'none'}
-                />
-              </Button>
-            </div>
-            <CardContent className="p-4 space-y-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground truncate">{product.name}</h3>
-                  <p className="text-sm text-muted-foreground">{product.brand}</p>
-                </div>
-                {product.matchScore && product.matchScore >= 60 && (
-                  <Badge variant="secondary" className="shrink-0">
-                    <Sparkles className="w-3 h-3 mr-1" />
-                    {product.matchScore}%
-                  </Badge>
-                )}
-              </div>
+        {paginatedProducts.map((product) => {
+          // Convert fingerprint to vector-like structure
+          const vector = fingerprint ? {
+            tags: fingerprint.topTags.reduce((acc, tag) => ({ ...acc, [tag]: 0.8 }), {} as any),
+            palette: fingerprint.dominantColors as any,
+            confidence: 1,
+            choices: fingerprint.topTags.length
+          } : {
+            tags: {} as any,
+            palette: [] as any,
+            confidence: 0,
+            choices: 0
+          };
 
-              {/* Premium: Match Insights */}
-              {isPremium && fingerprint && (
-                <div className="bg-accent/10 rounded-lg p-3 space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-accent-foreground">
-                    <TrendingUp className="w-3 h-3" />
-                    Why it matches
-                  </div>
-                  {(() => {
-                    const reasons = generateMatchReasons(
-                      product.tags,
-                      product.colors,
-                      fingerprint
-                    );
-                    return reasons.length > 0 ? (
-                      <div className="space-y-1.5">
-                        {reasons.map((reason, idx) => (
-                          <div key={idx} className="flex items-center gap-2 text-xs">
-                            {reason.type === 'tag' ? (
-                              <Badge variant="outline" className="text-xs px-1.5 py-0">
-                                <Sparkles className="w-2.5 h-2.5 mr-1" />
-                                {reason.score}%
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-xs px-1.5 py-0">
-                                <PaletteIcon className="w-2.5 h-2.5 mr-1" />
-                                {reason.score}%
-                              </Badge>
-                            )}
-                            <span className="text-muted-foreground">{reason.details}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">Similar to your aesthetic</p>
-                    );
-                  })()}
-                </div>
-              )}
-
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-xl font-semibold text-primary">${product.price}</p>
-                <Badge variant="outline" className="text-xs">
-                  {product.category}
-                </Badge>
-              </div>
-
-              {/* View Product Button */}
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  // Generate affiliate URL
-                  const brandId = product.brand.toLowerCase().replace(/\s+/g, '-');
-                  const affiliateUrl = getAffiliateUrl(
-                    product.imageUrl, // Mock URL - in real app this would be product.url
-                    brandId
-                  );
-                  window.open(affiliateUrl, '_blank');
-                }}
-              >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                View Product
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
+          return (
+            <ProductCard
+              key={product.id}
+              product={product}
+              vector={vector}
+              isFavorite={isFavorite(product.id)}
+              onFavoriteToggle={() => handleFavoriteToggle(product.id, product.brand)}
+              onViewProduct={() => {
+                const brandId = product.brand.toLowerCase().replace(/\s+/g, '-');
+                const affiliateUrl = getAffiliateUrl(product.imageUrl, brandId);
+                window.open(affiliateUrl, '_blank');
+              }}
+              recentBrands={recentBrands}
+            />
+          );
+        })}
       </div>
 
       {/* Pagination */}
