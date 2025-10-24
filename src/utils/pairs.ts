@@ -1,4 +1,7 @@
-import { VisualItem } from '@/types/domain';
+import { VisualItem, AestheticVector, AestheticTag } from '@/types/domain';
+import { OPPOSITES, uncertaintyScore } from '@/utils/aesthetic';
+
+const EPSILON = 0.20; // 20% explore
 
 /**
  * Fisher-Yates shuffle algorithm
@@ -134,4 +137,96 @@ export class PairGenerator {
  */
 export function createPairGenerator(items: VisualItem[]): PairGenerator {
   return new PairGenerator(items);
+}
+
+/**
+ * Smart pair selection with epsilon-greedy exploration
+ */
+export function getNextPairSmart(
+  allItems: VisualItem[],
+  vector: AestheticVector,
+  obs: Record<AestheticTag, number>,
+  recentIds: string[] // last 10–20 shown, to avoid repeats
+): [VisualItem, VisualItem] {
+  const explore = Math.random() < EPSILON;
+  return explore
+    ? pickExplorePair(allItems, vector, obs, recentIds)
+    : pickExploitPair(allItems, recentIds);
+}
+
+/**
+ * EXPLOIT: curated pair with good contrast
+ */
+function pickExploitPair(
+  items: VisualItem[],
+  recent: string[]
+): [VisualItem, VisualItem] {
+  const pool = items.filter((i) => !recent.includes(i.id));
+  const a = pool[Math.floor(Math.random() * pool.length)];
+  let b = pool[Math.floor(Math.random() * pool.length)];
+  let tries = 0;
+  while ((b.id === a.id || sharesManyTags(a, b)) && tries++ < 20) {
+    b = pool[Math.floor(Math.random() * pool.length)];
+  }
+  return [a, b];
+}
+
+function sharesManyTags(a: VisualItem, b: VisualItem) {
+  const s = new Set(a.tags);
+  return (
+    b.tags.filter((t) => s.has(t)).length >=
+    Math.ceil(Math.min(a.tags.length, b.tags.length) / 2)
+  );
+}
+
+/**
+ * EXPLORE: target uncertain + under-exposed tags with an opposite contrast
+ */
+function pickExplorePair(
+  items: VisualItem[],
+  v: AestheticVector,
+  obs: Record<AestheticTag, number>,
+  recent: string[]
+): [VisualItem, VisualItem] {
+  // 1) score tags by uncertainty
+  const scored = Object.entries(v.tags)
+    .map(([t, w]) => ({
+      t: t as AestheticTag,
+      u: uncertaintyScore(w, obs[t as AestheticTag] ?? 0),
+    }))
+    .sort((a, b) => b.u - a.u);
+
+  // 2) pick top target tag (among those we can actually serve)
+  const candidateTag = scored.find((s) => hasTagAvailable(items, s.t, recent));
+  const t = candidateTag?.t;
+  if (!t) return pickExploitPair(items, recent);
+
+  // 3) find opposite tag if any
+  const opp = OPPOSITES[t];
+
+  // 4) choose one item with target tag, one with opposite (or simply without target)
+  const pool = items.filter((i) => !recent.includes(i.id));
+  const withT = pool.filter((i) => i.tags.includes(t));
+  const a = withT[Math.floor(Math.random() * withT.length)];
+  if (!a) return pickExploitPair(items, recent);
+
+  let bPool = opp
+    ? pool.filter((i) => i.tags.includes(opp))
+    : pool.filter((i) => !i.tags.includes(t));
+  if (!bPool.length) bPool = pool.filter((i) => !i.tags.includes(t));
+  let b = bPool[Math.floor(Math.random() * bPool.length)];
+  let tries = 0;
+  while (b && (b.id === a.id || sharesManyTags(a, b)) && tries++ < 20) {
+    b = bPool[Math.floor(Math.random() * bPool.length)];
+  }
+
+  return b ? [a, b] : pickExploitPair(items, recent);
+}
+
+function hasTagAvailable(
+  items: VisualItem[],
+  tag: AestheticTag,
+  recent: string[]
+) {
+  return items.some((i) => i.tags.includes(tag) && !recent.includes(i.id));
 }

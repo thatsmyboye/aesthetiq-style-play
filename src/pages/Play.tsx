@@ -2,9 +2,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { useTasteStore, shouldCalibrate, markCalibrationDone } from '@/state/taste';
 import { getAllVisualItems } from '@/data/images';
 import { calibrationPairs } from '@/data/calibration';
-import { createPairGenerator } from '@/utils/pairs';
+import { getNextPairSmart } from '@/utils/pairs';
+import { loadObs, bumpObs } from '@/state/observations';
 import { trackChoiceMilestone } from '@/utils/tracking';
-import { VisualItem } from '@/types/domain';
+import { VisualItem, AestheticTag } from '@/types/domain';
 import SwipeChoice from '@/components/SwipeChoice';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -22,8 +23,9 @@ const Play = () => {
   const [isCalibrating, setIsCalibrating] = useState(shouldCalibrate());
   const [calibrationIndex, setCalibrationIndex] = useState(0);
 
-  // Create pair generator (memoized)
-  const pairGenerator = useMemo(() => createPairGenerator(visualItems), []);
+  // Observations & recent items for smart pair selection
+  const [obs, setObs] = useState(() => loadObs(Object.keys(vector.tags) as AestheticTag[]));
+  const [recent, setRecent] = useState<string[]>([]);
 
   // Load initial pair
   useEffect(() => {
@@ -68,25 +70,29 @@ const Play = () => {
   };
 
   const loadNextPair = () => {
-    const pair = pairGenerator.getNext();
-    if (pair) {
-      setCurrentPair(pair);
-      
-      // Prefetch next pair images for better performance
-      const nextPair = pairGenerator.peek();
-      if (nextPair) {
-        // Preload images in background
-        [nextPair[0].url, nextPair[1].url].forEach((url) => {
-          const img = new Image();
-          img.src = url;
-        });
-      }
-    }
+    // Use smart epsilon-greedy selection
+    const pair = getNextPairSmart(visualItems, vector, obs, recent);
+    setCurrentPair(pair);
+    
+    // Track recent items to avoid repeats
+    setRecent((r) => [pair[0].id, pair[1].id, ...r].slice(0, 20));
+    
+    // Prefetch next potential pair (explore mode approximation)
+    setTimeout(() => {
+      const nextPair = getNextPairSmart(visualItems, vector, obs, recent);
+      [nextPair[0].url, nextPair[1].url].forEach((url) => {
+        const img = new Image();
+        img.src = url;
+      });
+    }, 100);
   };
 
   const handleChoose = (chosen: VisualItem, rejected: VisualItem) => {
     // Update taste vector
     choose(chosen, rejected);
+
+    // Track exposure counts for exploration
+    setObs((prevObs) => bumpObs(prevObs, [chosen, rejected]));
 
     // Track milestone
     trackChoiceMilestone(vector.choices + 1);
@@ -165,7 +171,8 @@ const Play = () => {
   const handleReset = () => {
     reset();
     setHistory([]);
-    pairGenerator.reset();
+    setRecent([]);
+    setObs(loadObs(Object.keys(vector.tags) as AestheticTag[]));
     loadNextPair();
     toast.success('Taste profile reset', { duration: 2000 });
   };
