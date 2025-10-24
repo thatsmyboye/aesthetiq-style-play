@@ -29,7 +29,12 @@ import {
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { parseImageCSV, ParsedImage } from '@/utils/imageCSV';
-import { getValidTags } from '@/utils/csv';
+
+const validTags = [
+  "minimal","maximal","midcentury","brutalist","coquette","vintage","industrial","organic",
+  "glasscore","coastal","pastel","monochrome","boldcolor","natural_fiber","metallic",
+  "curved","angular","soft_light","high_contrast","neutral_palette"
+];
 
 interface AdminImage {
   id: string;
@@ -50,7 +55,7 @@ const Admin = () => {
   const [parseErrors, setParseErrors] = useState<string[]>([]);
   const [showCsvPreview, setShowCsvPreview] = useState(false);
 
-  const validTags = getValidTags();
+  
 
   // Load admin images from localStorage
   useEffect(() => {

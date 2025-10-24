@@ -45,7 +45,8 @@ export function ProductCard({
     ? buildProductUrl({ 
         baseUrl: product.url, 
         brandId: product.brand, 
-        deckId 
+        deckId,
+        product
       })
     : "#";
 

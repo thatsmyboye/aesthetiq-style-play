@@ -7,18 +7,22 @@ export function buildProductUrl({
   deckId,
   affParamKey,
   affParamValue,
+  product,
 }: {
   baseUrl: string;
   brandId?: string;
   deckId?: string | null;
   affParamKey?: string;
   affParamValue?: string;
+  product?: any;
 }) {
   try {
     const u = new URL(baseUrl);
     if (AFFILIATE_MODE) {
-      // Use custom aff params if provided, otherwise use defaults
-      if (affParamKey && affParamValue) {
+      // Use per-product overrides if available
+      if (product?.aff_param_key && product?.aff_param_value) {
+        u.searchParams.set(product.aff_param_key, product.aff_param_value);
+      } else if (affParamKey && affParamValue) {
         u.searchParams.set(affParamKey, affParamValue);
       } else if (brandId) {
         u.searchParams.set(PARTNER_AFF_PARAM, brandId);
@@ -39,7 +43,9 @@ export function buildProductUrl({
     // if baseUrl is relative or invalid, just append naïvely
     const s = new URLSearchParams();
     if (AFFILIATE_MODE) {
-      if (affParamKey && affParamValue) {
+      if (product?.aff_param_key && product?.aff_param_value) {
+        s.set(product.aff_param_key, product.aff_param_value);
+      } else if (affParamKey && affParamValue) {
         s.set(affParamKey, affParamValue);
       } else if (brandId) {
         s.set(PARTNER_AFF_PARAM, brandId);
