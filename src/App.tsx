@@ -9,6 +9,7 @@ import Profile from "./pages/Profile";
 import Shop from "./pages/Shop";
 import Partners from "./pages/Partners";
 import Admin from "./pages/Admin";
+import Auth from "./pages/Auth";
 import Decks from "./pages/Decks";
 import DeckPlay from "./pages/DeckPlay";
 import Privacy from "./pages/Privacy";
@@ -53,6 +54,7 @@ const App = () => {
               <Route path="/decks/:deckId" element={<DeckPlay />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/auth" element={<Auth />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>
