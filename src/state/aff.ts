@@ -7,6 +7,18 @@ function makeId() {
 }
 
 export function getOrCreateClickId(ttlDays = 7) {
+  // Check affiliate consent before creating tracking ID (GDPR requirement)
+  let affiliateConsent = false;
+  try {
+    const consentRaw = localStorage.getItem("aesthetiq.cmp.v1");
+    if (consentRaw) {
+      const consent = JSON.parse(consentRaw);
+      affiliateConsent = consent?.affiliate === true;
+    }
+  } catch {}
+
+  if (!affiliateConsent) return null; // Don't create tracking ID without consent
+
   try {
     const now = Date.now();
     const prev = localStorage.getItem(KEY);

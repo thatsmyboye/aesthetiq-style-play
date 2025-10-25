@@ -14,7 +14,7 @@ const DEFAULT: Consent = {
   givenAt: 0,
   necessary: true,
   analytics: false,
-  affiliate: true, // default ON; can be toggled off by user
+  affiliate: false, // GDPR compliant: default OFF, requires explicit opt-in
 };
 
 export function loadConsent(): Consent | null {

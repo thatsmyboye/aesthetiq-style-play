@@ -29,8 +29,11 @@ const App = () => {
 
   useEffect(() => {
     initializeDecks();
-    getOrCreateClickId();
-  }, []);
+    // Only create click ID if affiliate consent given (GDPR requirement)
+    if (consent?.affiliate) {
+      getOrCreateClickId();
+    }
+  }, [consent?.affiliate]);
 
   useEffect(() => {
     if (consent) saveConsent(consent);

@@ -16,13 +16,13 @@ export function buildProductUrl({
   affParamValue?: string;
   product?: any;
 }) {
-  // Check consent for affiliate params
-  let affiliateConsent = true; // default ON
+  // Check consent for affiliate params (GDPR requirement)
+  let affiliateConsent = false; // default OFF, requires explicit opt-in
   try {
     const consentRaw = localStorage.getItem("aesthetiq.cmp.v1");
     if (consentRaw) {
       const consent = JSON.parse(consentRaw);
-      affiliateConsent = consent?.affiliate !== false;
+      affiliateConsent = consent?.affiliate === true;
     }
   } catch {}
 
@@ -50,13 +50,13 @@ export function buildProductUrl({
     }
     return u.toString();
   } catch {
-    // Check consent again for fallback path
-    let affiliateConsent = true;
+    // Check consent again for fallback path (GDPR requirement)
+    let affiliateConsent = false; // default OFF, requires explicit opt-in
     try {
       const consentRaw = localStorage.getItem("aesthetiq.cmp.v1");
       if (consentRaw) {
         const consent = JSON.parse(consentRaw);
-        affiliateConsent = consent?.affiliate !== false;
+        affiliateConsent = consent?.affiliate === true;
       }
     } catch {}
 

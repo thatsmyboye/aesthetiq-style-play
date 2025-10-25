@@ -59,6 +59,18 @@ export function trackChoiceMilestone(choiceCount: number) {
  * Track feature usage
  */
 export function trackFeature(featureName: string, details?: Record<string, any>) {
+  // Check analytics consent before tracking (GDPR requirement)
+  let analyticsConsent = false;
+  try {
+    const consentRaw = localStorage.getItem("aesthetiq.cmp.v1");
+    if (consentRaw) {
+      const consent = JSON.parse(consentRaw);
+      analyticsConsent = consent?.analytics === true;
+    }
+  } catch {}
+
+  if (!analyticsConsent) return; // Don't track without consent
+
   logEvent('feature', {
     feature: featureName,
     ...details,
