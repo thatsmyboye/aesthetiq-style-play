@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import type { AestheticVector } from "@/types/domain";
+import type { AestheticVector, AestheticTag } from "@/types/domain";
 import { MatchChips } from "@/components/MatchChips";
 import { MatchExplainModal } from "@/components/MatchExplainModal";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,11 +19,13 @@ interface ProductCardProps {
     brand: string;
     price: number;
     imageUrl: string;
-    tags: any[];
+    tags: AestheticTag[];
     colors: string[];
     category: string;
     matchScore?: number;
     url?: string;
+    aff_param_key?: string;
+    aff_param_value?: string;
   };
   vector: AestheticVector;
   isFavorite: boolean;

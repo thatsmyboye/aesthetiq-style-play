@@ -18,6 +18,7 @@ import { getMeter, bumpMeter } from '@/state/premium';
 import { FREE_METERS } from '@/config/premium';
 import { usePremium as usePremiumHook } from '@/hooks/usePremium';
 import Paywall from '@/components/Paywall';
+import type { AestheticTag, ColorHex } from '@/types/domain';
 
 type PriceTier = 'all' | '$' | '$$' | '$$$';
 type Category = 'all' | 'Fashion' | 'Furniture' | 'Home Decor' | 'Art';
@@ -343,13 +344,13 @@ const Shop = () => {
         {paginatedProducts.map((product) => {
           // Convert fingerprint to vector-like structure
           const vector = fingerprint ? {
-            tags: fingerprint.topTags.reduce((acc, tag) => ({ ...acc, [tag]: 0.8 }), {} as any),
-            palette: fingerprint.dominantColors as any,
+            tags: fingerprint.topTags.reduce((acc, tag) => ({ ...acc, [tag]: 0.8 }), {} as Record<AestheticTag, number>),
+            palette: fingerprint.dominantColors as ColorHex[],
             confidence: 1,
             choices: fingerprint.topTags.length
           } : {
-            tags: {} as any,
-            palette: [] as any,
+            tags: {} as Record<AestheticTag, number>,
+            palette: [] as ColorHex[],
             confidence: 0,
             choices: 0
           };
@@ -357,7 +358,10 @@ const Shop = () => {
           return (
             <ProductCard
               key={product.id}
-              product={product}
+              product={{
+                ...product,
+                tags: product.tags as AestheticTag[],
+              }}
               vector={vector}
               isFavorite={isFavorite(product.id)}
               onFavoriteToggle={() => handleFavoriteToggle(product.id, product.brand)}

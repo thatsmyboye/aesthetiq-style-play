@@ -1,6 +1,11 @@
 import { AFFILIATE_MODE, AFF_SOURCE, PARTNER_AFF_PARAM, UTM } from "@/config/aff";
 import { getClickId } from "@/state/aff";
 
+interface Product {
+  aff_param_key?: string;
+  aff_param_value?: string;
+}
+
 export function buildProductUrl({
   baseUrl,
   brandId,
@@ -14,7 +19,7 @@ export function buildProductUrl({
   deckId?: string | null;
   affParamKey?: string;
   affParamValue?: string;
-  product?: any;
+  product?: Product;
 }) {
   // Check consent for affiliate params (GDPR requirement)
   let affiliateConsent = false; // default OFF, requires explicit opt-in

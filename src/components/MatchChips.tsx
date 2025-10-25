@@ -1,11 +1,11 @@
 import React from "react";
-import type { AestheticVector } from "@/types/domain";
+import type { AestheticVector, AestheticTag } from "@/types/domain";
 import { getMatchReasons } from "@/utils/reasons";
 import { PREMIUM_MODE } from "@/config/app";
 import { Badge } from "@/components/ui/badge";
 
 interface ProductLike {
-  tags: any[];
+  tags: AestheticTag[];
   colors: string[];
   brand: string;
 }

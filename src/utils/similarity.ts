@@ -17,8 +17,9 @@ export function tagCosine(aTags: AestheticTag[], bTags: AestheticTag[]): number 
 }
 
 // --- PALETTE SIMILARITY (0..1) using best-hex match
-const hexToRgb = (h: ColorHex) => ({ r: parseInt(h.slice(1,3),16), g: parseInt(h.slice(3,5),16), b: parseInt(h.slice(5,7),16) });
-const rgbDist = (a:any,b:any)=>Math.hypot(a.r-b.r,a.g-b.g,a.b-b.b); // 0..441
+type RGB = { r: number; g: number; b: number };
+const hexToRgb = (h: ColorHex): RGB => ({ r: parseInt(h.slice(1,3),16), g: parseInt(h.slice(3,5),16), b: parseInt(h.slice(5,7),16) });
+const rgbDist = (a: RGB, b: RGB) => Math.hypot(a.r-b.r, a.g-b.g, a.b-b.b); // 0..441
 export function paletteSimilarity(a: ColorHex[], b: ColorHex[]): number {
   if (!a?.length || !b?.length) return 0;
   let best = 0;

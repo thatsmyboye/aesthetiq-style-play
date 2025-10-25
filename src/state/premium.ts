@@ -16,16 +16,23 @@ export function saveEntitlement(e: Entitlement) {
 
 type Meters = { whyOpens: number; deepMatchesViews: number; wrappedExports: number; };
 export function loadMeters(): Meters {
-  try { return JSON.parse(localStorage.getItem(METER_KEY) || "{}"); } catch { return {} as any; }
+  try { 
+    const stored = localStorage.getItem(METER_KEY);
+    if (!stored) return { whyOpens: 0, deepMatchesViews: 0, wrappedExports: 0 };
+    return JSON.parse(stored); 
+  } catch { 
+    return { whyOpens: 0, deepMatchesViews: 0, wrappedExports: 0 }; 
+  }
 }
 export function bumpMeter(k: keyof Meters) {
   const m = loadMeters();
-  (m as any)[k] = ((m as any)[k] || 0) + 1;
+  m[k] = (m[k] || 0) + 1;
   try { localStorage.setItem(METER_KEY, JSON.stringify(m)); } catch {}
-  return m as Meters;
+  return m;
 }
 export function getMeter(k: keyof Meters) {
-  const m = loadMeters(); return ((m as any)[k] || 0) as number;
+  const m = loadMeters(); 
+  return m[k] || 0;
 }
 export function resetMeters() {
   try { localStorage.removeItem(METER_KEY); } catch {}

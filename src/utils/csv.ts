@@ -27,7 +27,7 @@ function splitLine(line: string): string[] {
 }
 
 export function toCsv(rows: CsvRow[], headers: string[]): string {
-  const esc = (s: any) => {
+  const esc = (s: string | number | undefined | null) => {
     const str = String(s ?? "");
     return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
   };
